@@ -26,6 +26,18 @@ const speedAccelCoeff = 12
 const tierDurationSec = 30
 const maxTier = 3
 
+// TUNABLE — playtest, not final (see docs/game-design.md "Tunables appendix",
+// "opening-difficulty floor duration"). The onboarding window: for the first N
+// seconds of every run, SpawnSystem restricts obstacle selection to the
+// baseline, most-predictable obstacle(s) so a first-time non-gamer gets a
+// gentle, teachable opening (docs/game-design.md "Feel & experience" →
+// "Onboarding" / "Difficulty floor"). This is deliberately a SEPARATE mechanism
+// from difficultyTier: that is a discrete, capped content-unlock gate, whereas
+// this is a one-off gentle-start floor. They share a "first N seconds" shape
+// but answer different questions, so they're kept distinct to avoid coupling
+// onboarding to future content-gating work.
+const onboardingDurationSec = 10
+
 // Shrinks without bound toward (never reaching) zero as t grows.
 export function spawnIntervalMs(t: number): number {
   return spawnBaseMs / (1 + spawnRampCoeff * Math.sqrt(t))
@@ -39,4 +51,9 @@ export function obstacleSpeed(t: number): number {
 // Discrete, capped step used to gate spawn-table rows by their minTier.
 export function difficultyTier(t: number): number {
   return Math.min(maxTier, Math.floor(t / tierDurationSec))
+}
+
+// True during the opening gentle-start window (see onboardingDurationSec).
+export function isOnboarding(t: number): boolean {
+  return t < onboardingDurationSec
 }

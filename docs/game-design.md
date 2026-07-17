@@ -164,6 +164,7 @@ interface SpawnEntry {
   damage?: number          // obstacles
   value?: number           // collectibles
   speedMultiplier?: number // optional per-entry override
+  onboardingSafe?: boolean // obstacles only: eligible during the onboarding window (see "Onboarding")
 }
 ```
 
@@ -294,6 +295,23 @@ on their first attempt, with no assumed gaming literacy.
   kind. This doubles as the difficulty-floor mechanism below (the opening
   window is inherently gentle by construction, not just by tuning the curve's
   constants).
+- **Implemented 2026-07-17 (Phase 4.2):** during the onboarding window
+  (`onboardingDurationSec`, 10s, in `DifficultyCurve.ts` — `isOnboarding(t)`)
+  `SpawnSystem` restricts obstacle selection to baseline obstacle rows flagged
+  `onboardingSafe` in the spawn table (currently just `gummy-meteor`, the
+  standard/most-predictable obstacle), instead of the full weighted obstacle
+  pool. So the opening spawns are the slower, simplest obstacle at random x —
+  which still forces occasional left/right dodging — while the faster
+  `sour-comet` and higher-damage `jawbreaker` are held back until the window
+  elapses, after which the full weighted table resumes unchanged. Collectibles
+  and power-ups are never a threat and are never restricted, throughout the
+  whole run. This is intentionally not a fully hand-scripted sequence; it's a
+  simple first version, expected to be revisited after the Phase 4.3 playtest
+  with fresh colleagues. The mechanism is deliberately kept separate from
+  `difficultyTier` (a discrete, capped content-unlock gate) even though both
+  share a "first N seconds" shape — see the `DifficultyCurve.ts` comments.
+  Which obstacles qualify is data (`onboardingSafe` on the row), so widening or
+  narrowing the onboarding pool is a data edit, not a systems-code change.
 - GameOver → next run must be near-instant (no asset reload, no multi-click
   menu) — so a player who wants another go isn't left waiting on the game
   itself.
@@ -324,6 +342,12 @@ specifically: the opening difficulty must be gentle enough that a first-time
 non-gamer survives long enough to feel good before it ramps — a floor
 constraint on tuning, not just "start low somewhere." Exact values TBD via
 playtesting.
+
+**Implemented 2026-07-17 (Phase 4.2):** this floor is satisfied structurally
+by the onboarding window described above (baseline-obstacle-only pool for the
+first `onboardingDurationSec`), not merely by tuning the ramp constants low —
+the gentle start is guaranteed by construction regardless of how the curve is
+later tuned.
 
 **Visual readability**
 
@@ -375,4 +399,4 @@ All marked non-final — placeholder defaults only, to be set via playtesting:
 | screen shake intensity| 0.01 (fraction of viewport) over 200 (ms) — TUNABLE, playtest, not final | on an accepted hit; deliberately well below Phaser's 0.05 default, which is jarring for a dodger. No motion-sensitivity toggle (see "Feel & experience"). See "Feel & experience" above |
 | particle burst        | 12 particles/burst, cap 60 concurrent alive — TUNABLE, playtest, not final | one-shot burst on hit (red) and on candy/power-up pickup (warm sparkle); the concurrent-alive cap enforces the "explicit caps on active particles" + graceful-degradation rule in `docs/architecture.md` (explode() emits fewer/none rather than exceeding the cap). See "Feel & experience" above |
 | near-miss bonus       | TBD         | see "Feel & experience" above  |
-| opening-difficulty floor duration | TBD (sec) | minimum gentle-start window, see "Feel & experience" above |
+| opening-difficulty floor duration | 10 (sec) — TUNABLE, playtest, not final | length of the gentle-start onboarding window: for the first N seconds of every run, obstacle selection is restricted to baseline `onboardingSafe` rows (see "Onboarding" / "Difficulty floor" under "Feel & experience"). Lives in `DifficultyCurve.ts` as `onboardingDurationSec`, deliberately separate from `difficultyTier` |

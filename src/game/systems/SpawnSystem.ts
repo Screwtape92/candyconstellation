@@ -7,6 +7,7 @@ import { Obstacle } from '../entities/Obstacle'
 import { PowerUp } from '../entities/PowerUp'
 import {
   difficultyTier,
+  isOnboarding,
   obstacleSpeed,
   spawnIntervalMs,
 } from './DifficultyCurve'
@@ -86,7 +87,7 @@ export class SpawnSystem {
   private spawn() {
     const t = this.elapsedSec()
 
-    const entry = this.pickWeighted(difficultyTier(t))
+    const entry = this.pickWeighted(difficultyTier(t), isOnboarding(t))
     if (entry) {
       const group = this.groups[entry.kind]
       const entity = this.createEntity(
@@ -132,12 +133,28 @@ export class SpawnSystem {
 
   // Standard weighted random selection (unseeded Math.random per
   // docs/architecture.md "RNG"), restricted to rows unlocked at the current
-  // tier via minTier. Returns undefined only if no row is unlocked yet (can't
-  // happen while any MVP row has minTier 0, but keeps the gate self-contained).
-  private pickWeighted(currentTier: number): SpawnEntry | undefined {
-    const unlocked = this.entries.filter(
-      (entry) => entry.minTier <= currentTier,
-    )
+  // tier via minTier. During the opening onboarding window (see
+  // docs/game-design.md "Onboarding") obstacle selection is further restricted
+  // to baseline `onboardingSafe` rows for a gentle, teachable start; this is a
+  // kind-branch on `obstacle`, not a specific-id branch — which obstacles
+  // qualify is data (the flag on the row), keeping this system id-agnostic.
+  // Collectibles and power-ups are never a threat, so they're never restricted.
+  // Returns undefined only if no row is eligible (can't happen while any MVP
+  // obstacle has minTier 0 and is onboardingSafe, but keeps the gate
+  // self-contained).
+  private pickWeighted(
+    currentTier: number,
+    onboarding: boolean,
+  ): SpawnEntry | undefined {
+    const unlocked = this.entries.filter((entry) => {
+      if (entry.minTier > currentTier) {
+        return false
+      }
+      if (onboarding && entry.kind === 'obstacle' && !entry.onboardingSafe) {
+        return false
+      }
+      return true
+    })
     if (unlocked.length === 0) {
       return undefined
     }

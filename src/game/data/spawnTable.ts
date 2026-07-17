@@ -9,6 +9,13 @@ export interface SpawnEntry {
   damage?: number // obstacles
   value?: number // collectibles
   speedMultiplier?: number // optional per-entry override
+  // Obstacles only: eligible during the opening onboarding window (see
+  // docs/game-design.md "Onboarding"). During that window SpawnSystem restricts
+  // obstacle selection to baseline, most-predictable rows flagged here, so a
+  // first-time player gets a gentle, teachable start. Absent/false on the
+  // harder variants; ignored for collectibles/power-ups (never a threat, never
+  // restricted).
+  onboardingSafe?: boolean
 }
 
 // The MVP obstacle + collectible + power-up rows (names approved 2026-07-15 —
@@ -52,6 +59,7 @@ export const spawnTable: SpawnEntry[] = [
     minTier: 0,
     spriteKey: 'gummy-meteor',
     damage: 1,
+    onboardingSafe: true,
   },
   {
     id: 'jawbreaker',
