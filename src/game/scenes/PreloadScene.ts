@@ -22,6 +22,10 @@ const PLACEHOLDERS: Record<string, PlaceholderShape> = {
   'hop-nebula-dust': { w: 26, h: 26, color: 0xbd93f9 },
   'malt-meteorite': { w: 26, h: 26, color: 0xf1fa8c },
   'candy-star': { w: 26, h: 26, color: 0xf8f8f2 },
+  // power-ups — a separate palette again (strong blue / red) so the two bonus
+  // pickups read as distinct from obstacles, collectibles, and each other.
+  'candy-magnet': { w: 30, h: 30, color: 0x2d7dff },
+  'candy-heart': { w: 30, h: 30, color: 0xff2d55 },
 }
 
 const DEFAULT_PLACEHOLDER: PlaceholderShape = {

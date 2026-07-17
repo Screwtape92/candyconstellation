@@ -359,8 +359,8 @@ All marked non-final — placeholder defaults only, to be set via playtesting:
 | spawn jitter range    | TBD         | avoids metronomic spawn timing |
 | max health            | TBD (health units) | starting/maximum player health, see "Health" above |
 | invulnerability window| TBD (ms)    | post-hit grace period          |
-| power-up duration     | TBD (ms)    | per `PowerUpDef.durationMs` (Candy Magnet only — Candy Heart is instant, `durationMs: 0`) |
-| Candy Heart restore amount | TBD (health units) | amount restored on pickup, capped at `maxHealth` |
+| power-up duration     | 6000 (ms) — TUNABLE, playtest, not final | per `PowerUpDef.durationMs` (Candy Magnet only — Candy Heart is instant, `durationMs: 0`) |
+| Candy Heart restore amount | 1 (health units) — TUNABLE, playtest, not final | amount restored on pickup, capped at `maxHealth` (currently 3); one unit is a meaningful but not full heal |
 | spawn ramp rate       | TBD         | see difficulty curve above     |
 | difficulty tier length| TBD (sec)   | see difficulty curve above     |
 | anti-cheat tolerance  | TBD (e.g. 1.15) | see anti-cheat formula above |

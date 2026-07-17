@@ -23,13 +23,26 @@ export class HealthSystem {
   constructor(scene: Phaser.Scene) {
     this.scene = scene
     scene.events.on('playerHit', this.onPlayerHit, this)
+    // Candy Heart restores health by emitting `heal` — systems talk via events,
+    // not direct method calls (docs/architecture.md "Engine patterns").
+    scene.events.on('heal', this.heal, this)
     scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       scene.events.off('playerHit', this.onPlayerHit, this)
+      scene.events.off('heal', this.heal, this)
     })
   }
 
   get current(): number {
     return this.health
+  }
+
+  // Restores health, capped at MAX_HEALTH, and emits healthChanged so the HUD
+  // reflects the restore (same event the "Health: N" text already listens for).
+  // A full-health player picking up a Candy Heart is a no-op increase but still
+  // re-emits — harmless and keeps the path branch-free.
+  heal(amount: number) {
+    this.health = Math.min(MAX_HEALTH, this.health + amount)
+    this.scene.events.emit('healthChanged', this.health)
   }
 
   private onPlayerHit(obstacle: Obstacle) {

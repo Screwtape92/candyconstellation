@@ -4,15 +4,19 @@ import { GAME_HEIGHT, GAME_WIDTH } from '../config'
 import { Collectible } from '../entities/Collectible'
 import { Obstacle } from '../entities/Obstacle'
 import { Player } from '../entities/Player'
+import { PowerUp } from '../entities/PowerUp'
 import { HealthSystem } from '../systems/HealthSystem'
+import { PowerUpSystem } from '../systems/PowerUpSystem'
 import { SpawnSystem } from '../systems/SpawnSystem'
 
 export class PlayScene extends Phaser.Scene {
   private player!: Player
   private obstacles!: Phaser.Physics.Arcade.Group
   private collectibles!: Phaser.Physics.Arcade.Group
+  private powerups!: Phaser.Physics.Arcade.Group
   private spawnSystem!: SpawnSystem
   private healthSystem!: HealthSystem
+  private powerUpSystem!: PowerUpSystem
   private healthText!: Phaser.GameObjects.Text
 
   constructor() {
@@ -23,13 +27,15 @@ export class PlayScene extends Phaser.Scene {
     this.player = new Player(this, GAME_WIDTH / 2, GAME_HEIGHT * 0.75)
 
     // One physics group per kind (docs/architecture.md "Engine patterns"). The
-    // SpawnSystem populates both from the single data-driven spawn table,
+    // SpawnSystem populates all three from the single data-driven spawn table,
     // routing each row to the group matching its kind.
     this.obstacles = this.physics.add.group()
     this.collectibles = this.physics.add.group()
+    this.powerups = this.physics.add.group()
     this.spawnSystem = new SpawnSystem(this, {
       obstacle: this.obstacles,
       collectible: this.collectibles,
+      powerup: this.powerups,
     })
     this.spawnSystem.start()
 
@@ -62,7 +68,19 @@ export class PlayScene extends Phaser.Scene {
       },
     )
 
+    // One overlap callback per group pair — power-ups get their own handler,
+    // not a branch inside another. PowerUpSystem looks up the effect by the
+    // pickup's id and applies it; collect() gates the apply to the first frame
+    // of contact so a timed effect isn't re-applied every overlap frame.
+    this.physics.add.overlap(this.player, this.powerups, (_player, powerup) => {
+      const pickup = powerup as PowerUp
+      if (pickup.collect()) {
+        this.powerUpSystem.apply(pickup.id)
+      }
+    })
+
     this.healthSystem = new HealthSystem(this)
+    this.powerUpSystem = new PowerUpSystem(this, this.player)
 
     this.healthText = this.add.text(
       16,
@@ -99,5 +117,10 @@ export class PlayScene extends Phaser.Scene {
       const collectible = child as Collectible
       collectible.update()
     })
+    this.powerups.getChildren().forEach((child) => {
+      const powerup = child as PowerUp
+      powerup.update()
+    })
+    this.powerUpSystem.updateMagnet(this.collectibles)
   }
 }

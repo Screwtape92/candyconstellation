@@ -23,6 +23,11 @@ type MovementKeys = {
 }
 
 export class Player extends Phaser.Physics.Arcade.Sprite {
+  // Set true while a Candy Magnet power-up is active; read each frame by
+  // PowerUpSystem's collectible pull (see docs/game-design.md "Power-ups").
+  // A flag rather than a system reference so the effect stays data-driven.
+  magnetActive = false
+
   private readonly keys: MovementKeys
 
   constructor(scene: Phaser.Scene, x: number, y: number) {

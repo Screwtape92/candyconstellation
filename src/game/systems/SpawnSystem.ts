@@ -4,20 +4,20 @@ import { GAME_WIDTH } from '../config'
 import { spawnTable, type SpawnEntry } from '../data/spawnTable'
 import { Collectible } from '../entities/Collectible'
 import { Obstacle } from '../entities/Obstacle'
+import { PowerUp } from '../entities/PowerUp'
 import {
   difficultyTier,
   obstacleSpeed,
   spawnIntervalMs,
 } from './DifficultyCurve'
 
-// A spawned entity: obstacle or collectible today, power-ups added in Phase
-// 3.4. All spawn entities share the same add-then-launch lifecycle.
-type SpawnEntity = Obstacle | Collectible
+// A spawned entity: obstacle, collectible, or power-up. All spawn entities
+// share the same add-then-launch lifecycle.
+type SpawnEntity = Obstacle | Collectible | PowerUp
 
 // Maps each spawnable kind to the physics group its entities belong in. It's
-// partial because not every kind has a group yet (power-ups arrive in Phase
-// 3.4); the spawn pool is filtered to only the kinds present here, so a row
-// whose kind has no group is never selected.
+// partial because a kind without a group here is filtered out of the spawn
+// pool, so a row whose kind has no group is never selected.
 type SpawnGroups = Partial<
   Record<SpawnEntry['kind'], Phaser.Physics.Arcade.Group>
 >
@@ -42,8 +42,8 @@ export class SpawnSystem {
     this.scene = scene
     this.groups = groups
     // Only rows whose kind has a destination group are spawnable. Adding a new
-    // kind (e.g. power-ups in Phase 3.4) is: pass its group here + add a case
-    // in createEntity — no change to selection or cadence.
+    // kind is: pass its group here + add a case in createEntity — no change to
+    // selection or cadence.
     this.entries = spawnTable.filter(
       (entry) => groups[entry.kind] !== undefined,
     )
@@ -109,10 +109,10 @@ export class SpawnSystem {
   }
 
   // The single kind-branch in this system: pick the entity class for a row's
-  // kind. New kinds extend here (Phase 3.4 adds a 'powerup' case) — spawn
-  // cadence and weighted selection stay untouched. `default` returns undefined
-  // for any kind without a case yet, which pickWeighted already excludes from
-  // the pool, so it can't actually fire today.
+  // kind. New kinds extend here — spawn cadence and weighted selection stay
+  // untouched. `default` returns undefined for any kind without a case, which
+  // pickWeighted already excludes from the pool (a kind with no group is
+  // filtered out), so it can't actually fire.
   private createEntity(
     entry: SpawnEntry,
     x: number,
@@ -123,6 +123,8 @@ export class SpawnSystem {
         return new Obstacle(this.scene, entry, x, baseSpeed)
       case 'collectible':
         return new Collectible(this.scene, entry, x, baseSpeed)
+      case 'powerup':
+        return new PowerUp(this.scene, entry, x, baseSpeed)
       default:
         return undefined
     }

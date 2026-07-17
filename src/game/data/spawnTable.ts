@@ -11,9 +11,8 @@ export interface SpawnEntry {
   speedMultiplier?: number // optional per-entry override
 }
 
-// The MVP obstacle + collectible rows (names approved 2026-07-15 — see
-// docs/game-design.md "MVP content"). Power-up rows are added in a later Phase
-// 3 task (3.4).
+// The MVP obstacle + collectible + power-up rows (names approved 2026-07-15 —
+// see docs/game-design.md "MVP content").
 //
 // TUNABLE — playtest, not final (see docs/game-design.md "Tunables appendix").
 // Per-row weight/damage/value/speedMultiplier are placeholder balance values:
@@ -33,6 +32,13 @@ export interface SpawnEntry {
 //    3.5. Collectibles carry no speedMultiplier, so they fall at the raw
 //    obstacleSpeed(t) curve like a baseline obstacle — the docs give no reason
 //    for candy to fall at a different rate.
+//  - the two power-ups (candy-magnet, candy-heart) are a bonus, not a staple,
+//    so each carries a low weight (4) — clearly rarer than any collectible
+//    (10). Their combined weight (8) is ~6% of the total pool (138). Each row's
+//    `id` matches a PowerUpDef in data/powerUps.ts, which is how a spawned
+//    pickup looks up its effect. They carry no damage/value/speedMultiplier —
+//    the effect is entirely defined by the PowerUpDef, and they fall at the raw
+//    obstacleSpeed(t) curve like a baseline obstacle.
 //
 // minTier is 0 on every row, so all rows are spawnable from the start. The
 // difficulty-tier gate (SpawnSystem + DifficultyCurve.difficultyTier) already
@@ -88,5 +94,19 @@ export const spawnTable: SpawnEntry[] = [
     minTier: 0,
     spriteKey: 'candy-star',
     value: 10,
+  },
+  {
+    id: 'candy-magnet',
+    kind: 'powerup',
+    weight: 4,
+    minTier: 0,
+    spriteKey: 'candy-magnet',
+  },
+  {
+    id: 'candy-heart',
+    kind: 'powerup',
+    weight: 4,
+    minTier: 0,
+    spriteKey: 'candy-heart',
   },
 ]
