@@ -27,17 +27,27 @@ const MAX_ALIVE_PARTICLES = 60
 // Distinct burst colors so a hit reads differently from a pickup at a glance
 // (the visual-readability constraint in docs/game-design.md "Feel &
 // experience"). Hit reuses the obstacle flash red; pickups get a warm sparkle.
+const POPUP_TINT = '#fff2a8'
 const HIT_BURST_TINT = 0xff5555
 const PICKUP_BURST_TINT = 0xfff2a8
 
+// TUNABLE — playtest, not final. Floating "+N" score popup on candy pickup:
+// how far it rises (px) and how long it takes to rise + fade before being
+// destroyed. Minor juice, not a core balance number — throwaway placeholder
+// text in the same spirit as the rest of the current visual feedback.
+const POPUP_RISE_PX = 40
+const POPUP_DURATION_MS = 600
+
 type BurstAt = { x: number; y: number }
+type CandyCollected = { value: number; x: number; y: number }
 
 // Owns all "juice" feedback (see docs/game-design.md "Feel & experience"):
 // hit-stop, screen shake, and particle bursts. Event-driven like every other
 // system (docs/architecture.md "Engine patterns") — it never reaches into
 // other systems. `playerDamaged` (emitted by HealthSystem only when damage is
 // actually applied, not on every overlap frame) drives hit-stop + shake + a
-// red burst; `pickupBurst` drives a candy-colored burst only.
+// red burst; `pickupBurst` drives a candy-colored burst only; `candyCollected`
+// (collectibles only, never power-ups) additionally floats a "+N" score popup.
 export class JuiceSystem {
   private readonly scene: Phaser.Scene
   private readonly emitter: Phaser.GameObjects.Particles.ParticleEmitter
@@ -61,9 +71,11 @@ export class JuiceSystem {
 
     scene.events.on('playerDamaged', this.onPlayerDamaged, this)
     scene.events.on('pickupBurst', this.onPickupBurst, this)
+    scene.events.on('candyCollected', this.onCandyCollected, this)
     scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       scene.events.off('playerDamaged', this.onPlayerDamaged, this)
       scene.events.off('pickupBurst', this.onPickupBurst, this)
+      scene.events.off('candyCollected', this.onCandyCollected, this)
     })
   }
 
@@ -75,6 +87,29 @@ export class JuiceSystem {
 
   private onPickupBurst(at: BurstAt) {
     this.burst(at, PICKUP_BURST_TINT)
+  }
+
+  // Floating "+N" arcade score popup at the pickup point. Fires only for
+  // collectibles (candyCollected carries a score value); power-up pickups use
+  // pickupBurst only and get no popup. Throwaway placeholder text, self-
+  // destructing after the tween so nothing accumulates.
+  private onCandyCollected(payload: CandyCollected) {
+    const popup = this.scene.add
+      .text(payload.x, payload.y, `+${payload.value}`, {
+        fontFamily: 'monospace',
+        fontSize: '20px',
+        color: POPUP_TINT,
+      })
+      .setOrigin(0.5)
+      .setDepth(101)
+    this.scene.tweens.add({
+      targets: popup,
+      y: payload.y - POPUP_RISE_PX,
+      alpha: 0,
+      duration: POPUP_DURATION_MS,
+      ease: 'Cubic.easeOut',
+      onComplete: () => popup.destroy(),
+    })
   }
 
   private burst(at: BurstAt, tint: number) {

@@ -85,7 +85,7 @@ export const spawnTable: SpawnEntry[] = [
     weight: 10,
     minTier: 0,
     spriteKey: 'hop-nebula-dust',
-    value: 10,
+    value: 50,
   },
   {
     id: 'malt-meteorite',
@@ -93,7 +93,7 @@ export const spawnTable: SpawnEntry[] = [
     weight: 10,
     minTier: 0,
     spriteKey: 'malt-meteorite',
-    value: 10,
+    value: 50,
   },
   {
     id: 'candy-star',
@@ -101,7 +101,7 @@ export const spawnTable: SpawnEntry[] = [
     weight: 10,
     minTier: 0,
     spriteKey: 'candy-star',
-    value: 10,
+    value: 50,
   },
   {
     id: 'candy-magnet',

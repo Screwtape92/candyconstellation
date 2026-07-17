@@ -2,8 +2,10 @@ import Phaser from 'phaser'
 
 // TUNABLE — playtest, not final (see docs/game-design.md "Tunables appendix",
 // "survival points per second"). Points earned per second survived — the
-// survival term of the scoring formula (docs/game-design.md "Scoring").
-const SURVIVAL_POINTS_PER_SEC = 10
+// survival term of the scoring formula (docs/game-design.md "Scoring"). Kept
+// low so survival is a modest baseline and candy pickups (value in
+// spawnTable.ts) are the dominant, risk-driven score lever.
+const SURVIVAL_POINTS_PER_SEC = 2
 
 // Generic score tracker for the formula in docs/game-design.md "Scoring":
 // score = survivalPointsPerSec * elapsedSec + Σ(candyValue). The survival term
@@ -43,7 +45,7 @@ export class ScoreSystem {
     )
   }
 
-  private onCandyCollected(value: number) {
-    this.candyTally += value
+  private onCandyCollected(payload: { value: number; x: number; y: number }) {
+    this.candyTally += payload.value
   }
 }

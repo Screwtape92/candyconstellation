@@ -67,10 +67,16 @@ export class PlayScene extends Phaser.Scene {
         // is counted once. The ScoreSystem (Phase 3.5) will listen for
         // candyCollected — same emit-an-event pattern as playerHit above.
         if (candy.collect()) {
-          this.events.emit('candyCollected', candy.value)
-          // Position-carrying sibling of candyCollected, for VFX only — keeps
-          // candyCollected a pure score signal (ScoreSystem needs the value,
-          // not the position). JuiceSystem bursts here.
+          // ScoreSystem reads .value; JuiceSystem reads x/y to float a "+N"
+          // score popup at the pickup point (collectibles only — power-ups
+          // carry no score value, so they never get a popup).
+          this.events.emit('candyCollected', {
+            value: candy.value,
+            x: candy.x,
+            y: candy.y,
+          })
+          // Position-carrying sibling of candyCollected, for the particle burst
+          // — shared with power-up pickups, which have no score value.
           this.events.emit('pickupBurst', { x: candy.x, y: candy.y })
         }
       },
