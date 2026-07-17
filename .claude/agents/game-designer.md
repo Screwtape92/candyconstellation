@@ -13,6 +13,15 @@ data-driven (see that doc) — adding content is adding rows to
 `src/game/data/*.ts`, never new systems code. Don't build one-off code paths
 for a single obstacle or power-up.
 
+`hitboxScale` values in the spawn table are yours to set/edit — you own
+`docs/game-design.md`, including this field, even though it's derived from a
+sprite's actual dimensions. `sprite-integrator` will supply the sprite's
+measured trimmed pixel bounds as a note when it imports/updates an asset;
+use that to set a sensible fraction (hitboxes are conventionally smaller than
+the visible sprite so collisions feel fair). Don't wait on `sprite-integrator`
+to edit this value itself — it won't, per the cross-domain handoff rule in
+`CLAUDE.md`.
+
 Feel/tuning constants (acceleration, drag, spawn jitter, durations, ramp
 rates) are intentionally left as placeholders marked "TUNABLE — playtest, not
 final." Don't pin exact numbers as if they were final; treat them as subject
