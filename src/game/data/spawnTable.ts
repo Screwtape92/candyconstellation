@@ -24,9 +24,10 @@ export interface SpawnEntry {
 //    and covered by a taller hitbox at sprite-integration time (Phase 7, see
 //    docs/asset-spec.md), not a runtime code path or data field here.
 //
-// minTier is 0 on every row until Phase 3.2 adds the difficulty-tier gate; the
-// field is present now, populated with the value that makes every row
-// currently spawnable.
+// minTier is 0 on every row, so all rows are spawnable from the start. The
+// difficulty-tier gate (SpawnSystem + DifficultyCurve.difficultyTier) already
+// filters selection by minTier; raising a row's minTier is how future content
+// gets tier-gated — a data change, not a code change.
 export const spawnTable: SpawnEntry[] = [
   {
     id: 'gummy-meteor',

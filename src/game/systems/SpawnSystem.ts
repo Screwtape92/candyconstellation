@@ -3,70 +3,104 @@ import Phaser from 'phaser'
 import { GAME_WIDTH } from '../config'
 import { spawnTable, type SpawnEntry } from '../data/spawnTable'
 import { Obstacle } from '../entities/Obstacle'
+import {
+  difficultyTier,
+  obstacleSpeed,
+  spawnIntervalMs,
+} from './DifficultyCurve'
 
-// TUNABLE — playtest, not final (see docs/game-design.md "Tunables appendix",
-// "spawn ramp rate"). Fixed placeholder interval until Phase 3.2 replaces it
-// with the decaying-rate spawnIntervalMs(t) difficulty curve. Uses Phaser's
-// Time/Clock API (docs/architecture.md "Engine patterns"), which is
-// wall-clock/delta-based, so spawn cadence is frame-rate independent.
-const SPAWN_INTERVAL_MS = 900
-
-// Generic weighted spawner: periodically picks a spawn-table row by weight and
-// drops it into the obstacle physics group. No branching on specific ids (see
-// docs/dev-standards.md "no god-files"). Difficulty-tier gating and the
-// decaying spawn-rate curve are Phase 3.2, not here.
+// Generic weighted spawner: periodically picks a spawn-table row by weight
+// (gated by the current difficulty tier) and drops it into the obstacle physics
+// group. No branching on specific ids (see docs/dev-standards.md "no
+// god-files"). Cadence and obstacle speed follow the decaying-rate difficulty
+// curve (see docs/game-design.md "Difficulty curve") sampled against elapsed
+// run time.
 export class SpawnSystem {
   private readonly scene: Phaser.Scene
   private readonly group: Phaser.Physics.Arcade.Group
   private readonly entries: SpawnEntry[]
-  private readonly totalWeight: number
   private timer?: Phaser.Time.TimerEvent
+  private startTime = 0
 
   constructor(scene: Phaser.Scene, group: Phaser.Physics.Arcade.Group) {
     this.scene = scene
     this.group = group
     this.entries = spawnTable.filter((entry) => entry.kind === 'obstacle')
-    this.totalWeight = this.entries.reduce(
-      (sum, entry) => sum + entry.weight,
-      0,
-    )
   }
 
   start() {
-    this.timer = this.scene.time.addEvent({
-      delay: SPAWN_INTERVAL_MS,
-      loop: true,
-      callback: this.spawn,
-      callbackScope: this,
-    })
+    // scene.time.now is the Clock's frame time (docs/architecture.md
+    // "Timed/duration triggers"), so elapsedSec() is wall-clock/delta-based and
+    // frame-rate independent. It resets naturally each run since PlayScene
+    // reinitializes SpawnSystem on restart.
+    this.startTime = this.scene.time.now
+
+    this.scheduleNext(0)
     this.scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.timer?.remove()
     })
   }
 
-  private spawn() {
-    const entry = this.pickWeighted()
-    const obstacle = new Obstacle(
-      this.scene,
-      entry,
-      Phaser.Math.Between(0, GAME_WIDTH),
+  // A single loop:true timer can't tighten its cadence: TimerEvent.delay is
+  // readonly (verified in phaser's typings + node_modules/phaser/src Clock,
+  // which reads it fresh each frame but exposes no supported way to rewrite a
+  // live timer's delay). So each spawn schedules the next as a fresh one-shot,
+  // recomputing the interval against the current elapsed time — the documented
+  // decaying-rate curve (docs/game-design.md "Difficulty curve"). One
+  // allocation per spawn (~1/sec), not per frame, so it's clear of the
+  // per-frame allocation budget (docs/architecture.md, a Phase 8 concern).
+  private scheduleNext(t: number) {
+    this.timer = this.scene.time.delayedCall(
+      spawnIntervalMs(t),
+      this.spawn,
+      undefined,
+      this,
     )
-    this.group.add(obstacle)
-    // Group.add() re-applies group body defaults (incl. velocityY: 0), so
-    // velocity must be asserted here, after the add — see Obstacle.launch().
-    obstacle.launch()
+  }
+
+  private elapsedSec(): number {
+    return (this.scene.time.now - this.startTime) / 1000
+  }
+
+  private spawn() {
+    const t = this.elapsedSec()
+
+    const entry = this.pickWeighted(difficultyTier(t))
+    if (entry) {
+      const obstacle = new Obstacle(
+        this.scene,
+        entry,
+        Phaser.Math.Between(0, GAME_WIDTH),
+        obstacleSpeed(t),
+      )
+      this.group.add(obstacle)
+      // Group.add() re-applies group body defaults (incl. velocityY: 0), so
+      // velocity must be asserted here, after the add — see Obstacle.launch().
+      obstacle.launch()
+    }
+
+    this.scheduleNext(t)
   }
 
   // Standard weighted random selection (unseeded Math.random per
-  // docs/architecture.md "RNG").
-  private pickWeighted(): SpawnEntry {
-    let roll = Math.random() * this.totalWeight
-    for (const entry of this.entries) {
+  // docs/architecture.md "RNG"), restricted to rows unlocked at the current
+  // tier via minTier. Returns undefined only if no row is unlocked yet (can't
+  // happen while any MVP row has minTier 0, but keeps the gate self-contained).
+  private pickWeighted(currentTier: number): SpawnEntry | undefined {
+    const unlocked = this.entries.filter(
+      (entry) => entry.minTier <= currentTier,
+    )
+    if (unlocked.length === 0) {
+      return undefined
+    }
+    const totalWeight = unlocked.reduce((sum, entry) => sum + entry.weight, 0)
+    let roll = Math.random() * totalWeight
+    for (const entry of unlocked) {
       roll -= entry.weight
       if (roll < 0) {
         return entry
       }
     }
-    return this.entries[this.entries.length - 1]
+    return unlocked[unlocked.length - 1]
   }
 }

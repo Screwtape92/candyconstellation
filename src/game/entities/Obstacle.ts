@@ -3,13 +3,6 @@ import Phaser from 'phaser'
 import { GAME_HEIGHT, GAME_WIDTH } from '../config'
 import type { SpawnEntry } from '../data/spawnTable'
 
-// TUNABLE — playtest, not final (see docs/game-design.md "Tunables appendix").
-// Shared base downward speed; each entry's optional speedMultiplier scales it.
-// Phase 3.2's difficulty curve replaces this constant with the per-run
-// obstacleSpeed(t) value. Arcade Physics integrates this per-second velocity
-// against real frame delta, so it's frame-rate independent.
-export const BASE_FALL_SPEED = 220
-
 // How long the hit flash lasts before the obstacle is destroyed.
 const HIT_FLASH_MS = 120
 
@@ -25,14 +18,25 @@ export class Obstacle extends Phaser.Physics.Arcade.Sprite {
   private readonly fallSpeed: number
   private isHit = false
 
-  constructor(scene: Phaser.Scene, entry: SpawnEntry, x: number) {
+  // baseSpeed is the difficulty curve's obstacleSpeed(t) sampled at spawn time
+  // (see docs/game-design.md "Difficulty curve"); each entry's optional
+  // speedMultiplier scales it. Fixed at construction — an obstacle already in
+  // flight is not re-accelerated; only newly-spawned ones reflect the higher t.
+  // Arcade Physics integrates this per-second velocity against real frame
+  // delta, so it's frame-rate independent.
+  constructor(
+    scene: Phaser.Scene,
+    entry: SpawnEntry,
+    x: number,
+    baseSpeed: number,
+  ) {
     super(scene, x, 0, entry.spriteKey)
 
     scene.add.existing(this)
     scene.physics.add.existing(this)
 
     this.damage = entry.damage ?? 0
-    this.fallSpeed = BASE_FALL_SPEED * (entry.speedMultiplier ?? 1)
+    this.fallSpeed = baseSpeed * (entry.speedMultiplier ?? 1)
 
     // Clamp horizontally to stay fully on-screen, and start just above the top.
     const halfWidth = this.displayWidth / 2
