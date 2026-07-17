@@ -25,7 +25,7 @@ else. A fresh session (local or cloud, yours or a teammate's) should read
 this file to see exactly where the build stands before doing anything else,
 and cross-check against `git log` if a checklist looks stale.
 
-**Overall progress**: 1/9 phases done (Phase 2) · ~8 weeks (58 days) to
+**Overall progress**: 2/9 phases done (Phases 2-3) · ~8 weeks (58 days) to
 **2026-09-11**
 — update the phase count here as phases are fully checked off, so it's a
 one-glance answer to "are we on pace."
@@ -80,13 +80,23 @@ curve, not a Phase 2 gap).
 
 ## Phase 3 — Data-driven systems + MVP content
 
-- [ ] Power-up system (Candy Magnet, Candy Heart)
-- [ ] Spawn table wired with MVP rows (Gummy Meteor, Jawbreaker, Sour Comet,
+- [x] Power-up system (Candy Magnet, Candy Heart)
+- [x] Spawn table wired with MVP rows (Gummy Meteor, Jawbreaker, Sour Comet,
       Hop Nebula Dust, Malt Meteorite, Candy Star)
-- [ ] Difficulty curve/tiers (decaying-rate, no hard cap)
-- [ ] Scoring formula
+- [x] Difficulty curve/tiers (decaying-rate, no hard cap)
+- [x] Scoring formula
 
-Per `docs/game-design.md`.
+**Done 2026-07-17.** Built as 5 sub-slices (spawn table + obstacles → difficulty
+curve → collectibles → power-ups → scoring), each verified live via browser
+automation before committing, not just by static review. Two real runtime bugs
+were caught and fixed along the way that static review/typecheck alone
+wouldn't have surfaced: `Phaser.Physics.Arcade.Group.add()` re-applies group
+body defaults (incl. `velocityY: 0`) to newly-added bodies, silently freezing
+a just-launched entity's velocity unless reasserted after `add()`; and
+`Phaser.Time.TimerEvent.delay` is `readonly` in the TS typings even though the
+Clock reads it live each frame, so a single `loop: true` timer can't have its
+cadence tightened at runtime — `SpawnSystem` instead reschedules a fresh
+one-shot after each spawn. Per `docs/game-design.md`.
 - **Owner**: `game-designer`.
 - **Exit condition**: matches the systems spec in `docs/game-design.md`;
   MVP content rows in place using the real, already-approved names (Gummy
