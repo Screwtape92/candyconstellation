@@ -8,17 +8,22 @@
 // findable, tunable place.
 
 // TUNABLE — playtest, not final (see docs/game-design.md "Tunables appendix",
-// "spawn ramp rate"). spawnBaseMs keeps the pre-curve fixed value (900) as its
-// t=0 starting point, so the very start of a run feels like what shipped
-// before the curve; spawnRampCoeff sets how fast the cadence tightens.
-const spawnBaseMs = 900
-const spawnRampCoeff = 0.1
+// "spawn ramp rate"). Revised after the first Phase 4.3 playtest round (testers
+// reported the game felt too easy and the ramp wasn't noticeable within a
+// minute or two of play). The old values (base 900 / coeff 0.1) barely tightened
+// spawn cadence over a session (~900ms→~510ms by t=60s). spawnBaseMs is lowered
+// so the post-onboarding baseline density is a touch higher, and spawnRampCoeff
+// is raised so the sqrt(t) ramp climbs perceptibly (~800ms→~270ms by t=60s).
+const spawnBaseMs = 800
+const spawnRampCoeff = 0.25
 
-// TUNABLE — playtest, not final. speedBasePxPerSec keeps the pre-curve fixed
-// fall speed (220) as its t=0 value; speedAccelCoeff sets how fast obstacles
-// speed up over the run. Grows without bound — no ceiling (per the doc).
+// TUNABLE — playtest, not final. Revised in the same Phase 4.3 pass for the same
+// "too easy" feedback. speedBasePxPerSec keeps the gentle t=0 fall speed (220),
+// which the onboarding window already protects; speedAccelCoeff is raised (12→30)
+// so obstacle speed roughly doubles over the first minute (~220→~450 px/s by
+// t=60s) instead of climbing only ~40%. Grows without bound — no ceiling.
 const speedBasePxPerSec = 220
-const speedAccelCoeff = 12
+const speedAccelCoeff = 30
 
 // TUNABLE — playtest, not final (see docs/game-design.md "Tunables appendix",
 // "difficulty tier length"). The discrete content gate: capped at maxTier so

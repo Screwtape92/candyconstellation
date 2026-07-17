@@ -384,15 +384,18 @@ All marked non-final — placeholder defaults only, to be set via playtesting:
 
 | constant              | placeholder | notes                        |
 |-----------------------|-------------|-------------------------------|
-| ship acceleration     | TBD         | feel constant                  |
-| ship drag             | TBD         | feel constant                  |
+| ship acceleration     | 6000 (px/s²) — TUNABLE, playtest, not final | feel constant (`ACCELERATION` in `Player.ts`). Raised from the Phase 2.1 placeholder (2400) after the first Phase 4.3 playtest round — testers found movement sluggish. Reaches `MAX_SPEED` in ~0.1s so direction changes read as near-instant |
+| ship drag             | 6000 (px/s²) — TUNABLE, playtest, not final | feel constant (`DRAG` in `Player.ts`). Raised from 1600 in the same Phase 4.3 pass; matched to acceleration so stopping/reversing is as crisp as accelerating rather than floaty |
+| ship max speed        | 600 (px/s) — TUNABLE, playtest, not final | `MAX_SPEED` in `Player.ts`. Raised from 420 in the same Phase 4.3 pass so the narrower 720px-wide portrait canvas still crosses quickly (~1.2s full width) without being twitchy for the non-gamer onboarding audience |
 | spawn jitter range    | TBD         | avoids metronomic spawn timing |
 | survival points/sec   | 10 (points/sec) — TUNABLE, playtest, not final | survival term of the scoring formula (see "Scoring" above); a round arcade-feel default. Survival is the dominant term — candy (value 10 each, ~1 in 4 spawns) is a bonus on top, not the main score driver |
 | max health            | TBD (health units) | starting/maximum player health, see "Health" above |
 | invulnerability window| TBD (ms)    | post-hit grace period          |
 | power-up duration     | 6000 (ms) — TUNABLE, playtest, not final | per `PowerUpDef.durationMs` (Candy Magnet only — Candy Heart is instant, `durationMs: 0`) |
 | Candy Heart restore amount | 1 (health units) — TUNABLE, playtest, not final | amount restored on pickup, capped at `maxHealth` (currently 3); one unit is a meaningful but not full heal |
-| spawn ramp rate       | TBD         | see difficulty curve above     |
+| spawn base cadence    | 800 (ms) — TUNABLE, playtest, not final | `spawnBaseMs` in `DifficultyCurve.ts`, the `t=0` spawn interval feeding `spawnIntervalMs(t)`. Lowered from 900 after the first Phase 4.3 playtest round ("too easy") to raise post-onboarding baseline density slightly |
+| spawn ramp rate       | 0.25 (coeff) — TUNABLE, playtest, not final | `spawnRampCoeff` in `DifficultyCurve.ts`; how fast the `sqrt(t)` cadence ramp climbs. Raised from 0.1 in the same Phase 4.3 pass — the old value barely tightened cadence within a minute of play (~900ms→~510ms by t=60s); now ~800ms→~270ms by t=60s |
+| obstacle speed ramp   | base 220 (px/s), coeff 30 — TUNABLE, playtest, not final | `speedBasePxPerSec` / `speedAccelCoeff` in `DifficultyCurve.ts` feeding `obstacleSpeed(t)`. `speedAccelCoeff` raised from 12 in the same Phase 4.3 pass so obstacle speed roughly doubles over the first minute (~220→~450 px/s by t=60s) instead of climbing only ~40%. Base kept at 220 — the onboarding window already protects the gentle opening |
 | difficulty tier length| TBD (sec)   | see difficulty curve above     |
 | anti-cheat tolerance  | TBD (e.g. 1.15) | see anti-cheat formula above |
 | hit-stop duration     | 80 (ms) — TUNABLE, playtest, not final | freeze-frame on an accepted hit (physics paused, then resumed); short enough to punctuate impact without stalling the auto-scroll. See "Feel & experience" above |

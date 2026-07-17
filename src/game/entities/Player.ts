@@ -4,12 +4,21 @@ export const PLAYER_TEXTURE_KEY = 'player'
 export const PLAYER_SIZE = 32
 
 // TUNABLE — playtest, not final (see docs/game-design.md "Tunables appendix").
-// Placeholder feel: responsive, not floaty. Arcade Physics integrates these
-// per-second values against real frame delta, so movement is frame-rate
-// independent without hand-rolled delta math.
-const ACCELERATION = 2400
-const DRAG = 1600
-const MAX_SPEED = 420
+// Arcade Physics integrates these per-second values against real frame delta,
+// so movement is frame-rate independent without hand-rolled delta math.
+//
+// Revised after the first Phase 4.3 playtest round (testers reported movement
+// felt sluggish). The old values (accel 2400 / drag 1600 / max 420) dated to
+// Phase 2.1's 960x540 landscape canvas and were never revisited for the
+// current 720x960 portrait canvas. Sluggishness in an accel-based model comes
+// from a perceptible ramp-up/ramp-down: accel is raised so max speed is reached
+// in ~0.1s (600/6000) for near-instant direction changes, and drag is raised to
+// match accel so stopping/reversing is just as crisp rather than floaty. Max
+// speed is up too so the narrower 720px-wide play space still crosses quickly
+// (~1.2s full width) without being twitchy for the non-gamer onboarding audience.
+const ACCELERATION = 6000
+const DRAG = 6000
+const MAX_SPEED = 600
 
 type MovementKeys = {
   up: Phaser.Input.Keyboard.Key
