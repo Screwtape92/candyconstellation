@@ -9,10 +9,30 @@ Each phase names the subagent(s) that own its work (see `CLAUDE.md`) and an
 exit condition — what has to be true before moving to the next phase, per the
 Definition of Done in `docs/dev-standards.md`.
 
+**Progress tracking (added 2026-07-15):** each phase has a checklist of its
+own sub-steps instead of a free-text status — check items off (`[x]`) as they
+land, rather than writing a prose summary each time. **These checklists are a
+starting sketch, not a fixed breakdown** — derived from each phase's existing
+scope description, not a binding decomposition. Whoever actually works a
+phase should freely add, merge, or re-split its items to match how the work
+really gets broken into subagent tasks at the time (per `CLAUDE.md`'s task
+granularity rule) — don't force real work to fit boxes guessed at during
+planning. Whoever is actually working a phase (any session, any team member)
+keeps the checklist current and commits it, the same as any other decision
+in this repo — don't leave progress recorded only in chat history or a local
+task list, since neither survives a killed session or is visible to anyone
+else. A fresh session (local or cloud, yours or a teammate's) should read
+this file to see exactly where the build stands before doing anything else,
+and cross-check against `git log` if a checklist looks stale.
+
+**Overall progress**: 0/9 phases done · ~8 weeks (58 days) to **2026-09-11**
+— update the phase count here as phases are fully checked off, so it's a
+one-glance answer to "are we on pace."
+
 ## Phase 1 — Scaffold
 
-- Vite + React + TS + Phaser 3 + Tailwind project setup; ESLint/Prettier/TS
-  strict config from `docs/dev-standards.md`.
+- [ ] Vite + React + TS + Phaser 3 + Tailwind project setup
+- [ ] ESLint/Prettier/TS strict config from `docs/dev-standards.md`
 - No auth de-risk spike needed — see `docs/planning-log.md`: Entra ID sign-in
   was dropped (2026-07-15) in favor of free-text name entry, which removed
   the project's single biggest risk item along with the need to test it
@@ -23,8 +43,12 @@ Definition of Done in `docs/dev-standards.md`.
 
 ## Phase 2 — Core vertical slice
 
-- Player movement/controls, one obstacle, collision, health, game over. No
-  power-ups, scoring, or backend yet.
+- [ ] Player movement/controls (arrows + WASD, full 4-directional)
+- [ ] One obstacle + collision
+- [ ] Health system (damage, invuln window, health<=0 → GameOver)
+- [ ] Game over flow
+
+No power-ups, scoring, or backend yet.
 - **Owner**: `game-designer`.
 - **Exit condition**: it's playable and dodging something feels reasonable —
   the fastest possible answer to "is the core loop fun," before investing in
@@ -32,8 +56,13 @@ Definition of Done in `docs/dev-standards.md`.
 
 ## Phase 3 — Data-driven systems + MVP content
 
-- Power-up system, spawn table wired up with the MVP rows, difficulty
-  curve/tiers, scoring — per `docs/game-design.md`.
+- [ ] Power-up system (Candy Magnet, Candy Heart)
+- [ ] Spawn table wired with MVP rows (Gummy Meteor, Jawbreaker, Sour Comet,
+      Hop Nebula Dust, Malt Meteorite, Candy Star)
+- [ ] Difficulty curve/tiers (decaying-rate, no hard cap)
+- [ ] Scoring formula
+
+Per `docs/game-design.md`.
 - **Owner**: `game-designer`.
 - **Exit condition**: matches the systems spec in `docs/game-design.md`;
   MVP content rows in place using the real, already-approved names (Gummy
@@ -42,11 +71,13 @@ Definition of Done in `docs/dev-standards.md`.
 
 ## Phase 4 — Feel & experience pass + first playtesting round
 
-- Juice (hit-stop, screen shake, particle bursts), onboarding/first-10-seconds
-  teaching, difficulty floor for first-time players — per the "Feel &
-  experience" section of `docs/game-design.md`.
-- First real playtesting round against the loop in `docs/dev-standards.md`'s
-  testing section.
+- [ ] Juice (hit-stop, screen shake, particle bursts)
+- [ ] Onboarding / first-10-seconds teaching
+- [ ] Difficulty floor for first-time players
+- [ ] First playtesting round (3-5 fresh colleagues, individual/unaided —
+      see `docs/game-design.md`'s Playtesting loop plan)
+
+Per the "Feel & experience" section of `docs/game-design.md`.
 - **Owner**: `game-designer`, `qa-tester`.
 - **Exit condition**: playtesters (not just the developer) find the opening
   seconds teachable and the core loop enjoyable; tunable constants have real
@@ -54,8 +85,13 @@ Definition of Done in `docs/dev-standards.md`.
 
 ## Phase 5 — Backend
 
-- Azure Static Web App + Functions + Table Storage, `submitScore`/
-  `getLeaderboard`, anti-cheat check — per `docs/architecture.md`.
+- [ ] Azure Static Web App + Functions scaffolding
+- [ ] Table Storage (`Scores`, `RateLimits` tables)
+- [ ] `submitScore` endpoint (insert-only, input validation, rate-limiting,
+      anti-cheat check)
+- [ ] `getLeaderboard` endpoint
+
+Per `docs/architecture.md`.
 - **Owner**: `azure-infra`.
 - **Exit condition**: matches the Table Storage schema and anti-cheat formula
   in the specs; runs independent of the frontend (testable via direct calls)
@@ -63,8 +99,12 @@ Definition of Done in `docs/dev-standards.md`.
 
 ## Phase 6 — Score submission + resilience
 
-- Free-text name entry on game over; fire-and-forget score submission with
-  the localStorage retry queue; leaderboard polling UI. No sign-in step.
+- [ ] Free-text name entry on game over
+- [ ] Fire-and-forget score submission
+- [ ] `localStorage` retry queue (retry-safe via shared `submissionGuid`)
+- [ ] Leaderboard polling UI
+
+No sign-in step.
 - **Owner**: `azure-infra`.
 - **Exit condition**: a full run — play, game over, enter name, score
   submitted, leaderboard updates — works end-to-end, including a simulated
@@ -72,24 +112,32 @@ Definition of Done in `docs/dev-standards.md`.
 
 ## Phase 7 — Real assets
 
-- PixelLab sprite/audio exports replacing placeholders, via
-  `sprite-integrator` and the `sprite-import` skill — per `docs/asset-spec.md`.
-- Content naming is already resolved (2026-07-15, see `docs/game-design.md`
-  and `docs/asset-spec.md`) — real sprites can be sourced/named against the
-  actual entities from day one of this phase, no longer a blocker.
+- [ ] Obstacle sprites (Gummy Meteor, Jawbreaker, Sour Comet)
+- [ ] Power-up sprites (Candy Magnet, Candy Heart)
+- [ ] Collectible sprites (Hop Nebula Dust, Malt Meteorite, Candy Star)
+- [ ] Player + background sprites
+- [ ] Audio (Kenney.nl CC0 packs — background loop + 5 SFX cues)
+
+Via `sprite-integrator` and the `sprite-import` skill, per
+`docs/asset-spec.md`. Content naming is already resolved (2026-07-15) — real
+sprites can be sourced/named against the actual entities from day one of
+this phase, no longer a blocker.
 - **Owner**: `sprite-integrator`.
 - **Exit condition**: every MVP entity has a validated sprite/animation set
   wired in; visual readability holds per the Feel & experience section.
 
 ## Phase 8 — Launch readiness
 
-- Verify the already-decided runtime settings actually hold up in practice:
-  `Phaser.Scale.FIT` display/scaling, `Phaser.AUTO` renderer, restart cleanup
-  under repeated play, the ~5s initial load-time budget, debug tooling
-  stripped from the production build — per `docs/architecture.md`'s Runtime
-  concerns. Confirm the continuous-auto-deploy CI/deploy approach (already
-  decided in `docs/dev-standards.md`) is actually wired up and working, not a
-  decision still to make.
+- [ ] Display/scaling mode verified (`Phaser.Scale.FIT`)
+- [ ] Renderer mode verified (`Phaser.AUTO`)
+- [ ] Restart cleanup verified under repeated play (same tab, many runs)
+- [ ] Initial load-time budget verified (~5s on typical broadband)
+- [ ] Debug tooling stripped from the production build
+- [ ] Continuous auto-deploy CI/deploy confirmed actually wired up and working
+
+Per `docs/architecture.md`'s Runtime concerns and `docs/dev-standards.md`'s
+CI/deploy section — these are all already-decided settings to *verify*, not
+decisions still to make.
 - Renamed 2026-07-15 from "Kiosk readiness" — this project has no physical
   venue/kiosk (standalone public web link, anyone plays anytime on their own
   device), so this phase is about the game holding up for any individual
@@ -104,9 +152,13 @@ Definition of Done in `docs/dev-standards.md`.
 
 ## Phase 9 — Playtesting & tuning rounds, then freeze
 
-- Iterate tunable constants against real playtesters; final `qa-tester` pass
-  against every spec in `docs/game-design.md` and `docs/architecture.md`;
-  deploy freeze before **2026-09-11** (beerfest date).
+- [ ] Wider playtesting round (8-10+ people, varied familiarity, repeat-replay
+      stress test — see `docs/game-design.md`'s Playtesting loop plan)
+- [ ] Tunable constants set to real final values from playtesting feedback
+- [ ] Final `qa-tester` pass against `docs/game-design.md`
+- [ ] Final `qa-tester` pass against `docs/architecture.md`
+- [ ] Final pre-freeze smoke-test on the frozen build
+- [ ] Deploy freeze before **2026-09-11** (beerfest date)
 - **Owner**: `qa-tester`, `game-designer`.
 - **Exit condition**: all `planning-signoff.md` items are checked off, all
   specs verified by `qa-tester`, and the build running at the frozen `main`
