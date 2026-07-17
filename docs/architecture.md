@@ -5,7 +5,11 @@ the current-state spec — update it whenever an architectural decision changes.
 
 ## Stack
 
-- **Frontend**: Vite + React + TypeScript + Phaser 3 + Tailwind.
+- **Frontend**: Vite + React + TypeScript + Phaser 4 + Tailwind. (Corrected
+  2026-07-17 — planning targeted Phaser 3, but Phase 1 scaffolding installed
+  latest, which resolved to ^4.2.1; Phase 2.1's movement code confirmed the
+  APIs used — `Scene`, Arcade Physics, `Scale.FIT`, `Phaser.AUTO` — all work
+  fine on 4, so the version was updated here rather than pinning back to 3.)
 - **Backend**: Azure Static Web Apps (hosting + integrated Functions API) +
   Azure Table Storage (leaderboard persistence).
 - **Auth**: none. Players submit a free-text name at GameOver, classic
@@ -56,8 +60,9 @@ score submission/leaderboard) screens. A `<PhaserGame>` component creates the
   const isFirstCleanup = useRef(true);
 
   useEffect(() => {
-    if (gameRef.current) return; // already created (shouldn't happen, but guards re-entry)
-    gameRef.current = new Phaser.Game(config);
+    if (!gameRef.current) {
+      gameRef.current = new Phaser.Game(config);
+    }
 
     return () => {
       if (isFirstCleanup.current) {
@@ -70,11 +75,17 @@ score submission/leaderboard) screens. A `<PhaserGame>` component creates the
     };
   }, []);
   ```
-  This relies on StrictMode's double-invoke happening only once, synchronously,
-  around the initial mount — not on every re-render — so the "skip the first
-  cleanup" trick correctly distinguishes the phantom unmount from a real one.
-  On a genuine unmount (navigating away from the game route), the instance is
-  destroyed exactly once.
+  The cleanup closure must be returned unconditionally from every effect run —
+  only the *creation* line is guarded by `if (!gameRef.current)`. An earlier
+  version of this guard returned early (`if (gameRef.current) return;`) before
+  reaching the `return () => {...}` line on the effect's second (real) run,
+  which meant no cleanup was registered for that commit at all — so on a
+  genuine unmount, React had nothing to call and `destroy()` never fired. With
+  the cleanup always registered, this relies on StrictMode's double-invoke
+  happening only once, synchronously, around the initial mount — not on every
+  re-render — so the "skip the first cleanup" trick correctly distinguishes
+  the phantom unmount from a real one. On a genuine unmount (navigating away
+  from the game route), the instance is destroyed exactly once.
 
 In-game HUD (health, score, active power-up) stays inside Phaser — it's
 tightly coupled to the render loop. Only the GameOver transition crosses back

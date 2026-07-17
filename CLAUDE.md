@@ -7,7 +7,7 @@ bar and power-ups rather than instant death.
 
 ## Stack
 
-Vite + React + TypeScript + Phaser 3 + Tailwind (frontend); Azure Static Web
+Vite + React + TypeScript + Phaser 4 + Tailwind (frontend); Azure Static Web
 Apps + Functions + Table Storage (backend); no sign-in — free-text name entry
 for high scores, classic-arcade style.
 

@@ -31,7 +31,9 @@ one-glance answer to "are we on pace."
 
 ## Phase 1 — Scaffold
 
-- [x] Vite + React + TS + Phaser 3 + Tailwind project setup
+- [x] Vite + React + TS + Phaser 4 + Tailwind project setup (installed
+      version resolved to Phaser ^4.2.1, not 3 as originally planned — see
+      `docs/architecture.md`'s Stack section)
 - [x] ESLint/Prettier/TS strict config from `docs/dev-standards.md`
 - [ ] One-time early smoke-deploy: create the real Azure Static Web App
       resource and confirm GitHub Actions auto-deploys this scaffold to it
