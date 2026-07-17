@@ -76,5 +76,20 @@ actually building the game.
 
 ## Local dev setup
 
-TBD — to be filled in once the project is scaffolded (no `package.json` exists
-yet). Placeholder, not blocking planning sign-off.
+- Requires Node.js (v22+) and npm.
+- `npm install` — install dependencies.
+- `npm run dev` — Vite dev server with HMR.
+- `npm run build` — TS project-reference build (`tsc -b`, strict mode) +
+  production Vite build.
+- `npm run lint` — ESLint (flat config, `typescript-eslint` strict preset).
+- `npm run format` / `npm run format:check` — Prettier write/check, scoped to
+  code (docs/`CLAUDE.md`/`.claude` are excluded via `.prettierignore` — this
+  repo's prose docs aren't meant to be Prettier-formatted).
+- `npm run typecheck` — `tsc -b --noEmit`, standalone from a full build.
+- `npm run preview` — serve the production build locally.
+- Tailwind CSS v4 is wired in via `@tailwindcss/vite` (no separate
+  `tailwind.config.js`/PostCSS setup needed) — `src/index.css` just has
+  `@import 'tailwindcss';`.
+- Phase 5/6 backend work additionally needs Azure Functions Core Tools
+  (`func start`) and Azurite (Table Storage emulator) — not needed yet for
+  frontend-only work.

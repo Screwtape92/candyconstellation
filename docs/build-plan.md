@@ -31,8 +31,8 @@ one-glance answer to "are we on pace."
 
 ## Phase 1 — Scaffold
 
-- [ ] Vite + React + TS + Phaser 3 + Tailwind project setup
-- [ ] ESLint/Prettier/TS strict config from `docs/dev-standards.md`
+- [x] Vite + React + TS + Phaser 3 + Tailwind project setup
+- [x] ESLint/Prettier/TS strict config from `docs/dev-standards.md`
 - [ ] One-time early smoke-deploy: create the real Azure Static Web App
       resource and confirm GitHub Actions auto-deploys this scaffold to it
       successfully, then go back to local-first development for everything
@@ -41,6 +41,11 @@ one-glance answer to "are we on pace."
       reasoning that originally put the now-dropped Entra spike first in this
       order), rather than discovering a pipeline surprise for the first time
       in Phase 8 with little runway left.
+      **Deferred 2026-07-17**: rest of scaffold (tooling/build/lint/format)
+      is done and committed; this step is on hold until a proper Azure
+      subscription is set up — the CLI here was logged into an unrelated
+      "Auxcon Production" tenant, not one this project should deploy into.
+      Not a blocker for Phase 2+ local-first work.
 - No auth de-risk spike needed — see `docs/planning-log.md`: Entra ID sign-in
   was dropped (2026-07-15) in favor of free-text name entry, which removed
   the project's single biggest risk item along with the need to test it
