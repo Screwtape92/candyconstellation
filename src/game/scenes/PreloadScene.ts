@@ -3,20 +3,28 @@ import Phaser from 'phaser'
 import { spawnTable } from '../data/spawnTable'
 import { PLAYER_SIZE, PLAYER_TEXTURE_KEY } from '../entities/Player'
 
-// Throwaway placeholder appearance per obstacle spriteKey — distinct
-// color/size so the obstacle types are tellable apart while playtesting.
-// Replaced by real PixelLab sprites in Phase 7. jawbreaker is the big block;
-// the tall sour-comet rectangle previews its baked trailing tail / taller
-// hitbox. Not gameplay data — real size comes from the sprite.
+// Throwaway placeholder appearance per spriteKey — distinct color/size so the
+// content types are tellable apart while playtesting (obstacles vs collectibles
+// especially, per the visual-readability constraint in docs/game-design.md
+// "Feel & experience"). Replaced by real PixelLab sprites in Phase 7.
+// jawbreaker is the big block; the tall sour-comet rectangle previews its baked
+// trailing tail / taller hitbox. Collectibles are smaller and use a separate
+// bright palette from the obstacle colors so candy reads as pickup-not-hazard
+// at a glance. Not gameplay data — real size comes from the sprite.
 type PlaceholderShape = { w: number; h: number; color: number }
 
-const OBSTACLE_PLACEHOLDERS: Record<string, PlaceholderShape> = {
+const PLACEHOLDERS: Record<string, PlaceholderShape> = {
+  // obstacles
   'gummy-meteor': { w: 40, h: 40, color: 0xff79c6 },
   jawbreaker: { w: 56, h: 56, color: 0xffb86c },
   'sour-comet': { w: 24, h: 60, color: 0x50fa7b },
+  // collectibles
+  'hop-nebula-dust': { w: 26, h: 26, color: 0xbd93f9 },
+  'malt-meteorite': { w: 26, h: 26, color: 0xf1fa8c },
+  'candy-star': { w: 26, h: 26, color: 0xf8f8f2 },
 }
 
-const DEFAULT_OBSTACLE_PLACEHOLDER: PlaceholderShape = {
+const DEFAULT_PLACEHOLDER: PlaceholderShape = {
   w: 40,
   h: 40,
   color: 0xaaaaaa,
@@ -49,11 +57,7 @@ export class PreloadScene extends Phaser.Scene {
     )
 
     for (const entry of spawnTable) {
-      if (entry.kind !== 'obstacle') {
-        continue
-      }
-      const shape =
-        OBSTACLE_PLACEHOLDERS[entry.spriteKey] ?? DEFAULT_OBSTACLE_PLACEHOLDER
+      const shape = PLACEHOLDERS[entry.spriteKey] ?? DEFAULT_PLACEHOLDER
       this.generateRectTexture(entry.spriteKey, shape.w, shape.h, shape.color)
     }
   }

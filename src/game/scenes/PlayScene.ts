@@ -1,6 +1,7 @@
 import Phaser from 'phaser'
 
 import { GAME_HEIGHT, GAME_WIDTH } from '../config'
+import { Collectible } from '../entities/Collectible'
 import { Obstacle } from '../entities/Obstacle'
 import { Player } from '../entities/Player'
 import { HealthSystem } from '../systems/HealthSystem'
@@ -9,6 +10,7 @@ import { SpawnSystem } from '../systems/SpawnSystem'
 export class PlayScene extends Phaser.Scene {
   private player!: Player
   private obstacles!: Phaser.Physics.Arcade.Group
+  private collectibles!: Phaser.Physics.Arcade.Group
   private spawnSystem!: SpawnSystem
   private healthSystem!: HealthSystem
   private healthText!: Phaser.GameObjects.Text
@@ -21,11 +23,19 @@ export class PlayScene extends Phaser.Scene {
     this.player = new Player(this, GAME_WIDTH / 2, GAME_HEIGHT * 0.75)
 
     // One physics group per kind (docs/architecture.md "Engine patterns"). The
-    // SpawnSystem populates it from the data-driven spawn table.
+    // SpawnSystem populates both from the single data-driven spawn table,
+    // routing each row to the group matching its kind.
     this.obstacles = this.physics.add.group()
-    this.spawnSystem = new SpawnSystem(this, this.obstacles)
+    this.collectibles = this.physics.add.group()
+    this.spawnSystem = new SpawnSystem(this, {
+      obstacle: this.obstacles,
+      collectible: this.collectibles,
+    })
     this.spawnSystem.start()
 
+    // One overlap callback per group pair (docs/architecture.md "Engine
+    // patterns") — a separate handler for collectibles, not a branch inside the
+    // obstacle one.
     this.physics.add.overlap(
       this.player,
       this.obstacles,
@@ -35,6 +45,20 @@ export class PlayScene extends Phaser.Scene {
         // it also still drives the temporary hit flash for now.
         this.events.emit('playerHit', hit)
         hit.flashAndDestroy()
+      },
+    )
+
+    this.physics.add.overlap(
+      this.player,
+      this.collectibles,
+      (_player, collectible) => {
+        const candy = collectible as Collectible
+        // collect() returns true only on the first frame of contact, so value
+        // is counted once. The ScoreSystem (Phase 3.5) will listen for
+        // candyCollected — same emit-an-event pattern as playerHit above.
+        if (candy.collect()) {
+          this.events.emit('candyCollected', candy.value)
+        }
       },
     )
 
@@ -70,6 +94,10 @@ export class PlayScene extends Phaser.Scene {
     this.obstacles.getChildren().forEach((child) => {
       const obstacle = child as Obstacle
       obstacle.update()
+    })
+    this.collectibles.getChildren().forEach((child) => {
+      const collectible = child as Collectible
+      collectible.update()
     })
   }
 }
