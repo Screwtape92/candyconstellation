@@ -25,7 +25,7 @@ else. A fresh session (local or cloud, yours or a teammate's) should read
 this file to see exactly where the build stands before doing anything else,
 and cross-check against `git log` if a checklist looks stale.
 
-**Overall progress**: 2/9 phases done (Phases 2-3) · ~8 weeks (58 days) to
+**Overall progress**: 3/9 phases done (Phases 2-4) · ~8 weeks (58 days) to
 **2026-09-11**
 — update the phase count here as phases are fully checked off, so it's a
 one-glance answer to "are we on pace."
@@ -105,13 +105,25 @@ one-shot after each spawn. Per `docs/game-design.md`.
 
 ## Phase 4 — Feel & experience pass + first playtesting round
 
-- [ ] Juice (hit-stop, screen shake, particle bursts)
-- [ ] Onboarding / first-10-seconds teaching
-- [ ] Difficulty floor for first-time players
-- [ ] First playtesting round (3-5 fresh colleagues, individual/unaided —
+- [x] Juice (hit-stop, screen shake, particle bursts)
+- [x] Onboarding / first-10-seconds teaching
+- [x] Difficulty floor for first-time players
+- [x] First playtesting round (3-5 fresh colleagues, individual/unaided —
       see `docs/game-design.md`'s Playtesting loop plan)
 
-Per the "Feel & experience" section of `docs/game-design.md`.
+**Done 2026-07-17.** Testers surfaced two real tuning gaps the developer's own
+play hadn't caught: sluggish movement (acceleration/drag never revisited since
+Phase 2.1, including after the canvas's landscape→portrait switch) and a
+difficulty ramp too gentle to feel over a short session. A separate report —
+score seemed to only reflect survival time — turned out not to be a bug
+(verified live: candy pickups were already adding correctly) but a real
+design gap: survival time so outweighed candy value that there was no
+incentive to risk pickups over just running out the clock. Rebalanced so
+candy is the dominant, risk-driven score lever, survival a modest baseline,
+and added a "+N" popup so a pickup is visible against the continuously-
+climbing survival number. All three fixes verified live (not just reasoned
+through) before landing, then confirmed against the user's own play. Per the
+"Feel & experience" section of `docs/game-design.md`.
 - **Owner**: `game-designer`, `qa-tester`.
 - **Exit condition**: playtesters (not just the developer) find the opening
   seconds teachable and the core loop enjoyable; tunable constants have real
