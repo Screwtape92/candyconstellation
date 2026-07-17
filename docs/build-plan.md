@@ -33,13 +33,21 @@ one-glance answer to "are we on pace."
 
 - [ ] Vite + React + TS + Phaser 3 + Tailwind project setup
 - [ ] ESLint/Prettier/TS strict config from `docs/dev-standards.md`
+- [ ] One-time early smoke-deploy: create the real Azure Static Web App
+      resource and confirm GitHub Actions auto-deploys this scaffold to it
+      successfully, then go back to local-first development for everything
+      else through Phase 7. Added 2026-07-15 — de-risks the CI/deploy
+      pipeline itself early (same "surface the biggest unknown first"
+      reasoning that originally put the now-dropped Entra spike first in this
+      order), rather than discovering a pipeline surprise for the first time
+      in Phase 8 with little runway left.
 - No auth de-risk spike needed — see `docs/planning-log.md`: Entra ID sign-in
   was dropped (2026-07-15) in favor of free-text name entry, which removed
   the project's single biggest risk item along with the need to test it
   first.
 - **Owner**: general scaffolding, no subagent-specific work.
 - **Exit condition**: project scaffolding builds and runs with lint/format/TS
-  strict checks passing.
+  strict checks passing; the smoke-deploy is confirmed live at the SWA URL.
 
 ## Phase 2 — Core vertical slice
 
@@ -91,7 +99,13 @@ Per the "Feel & experience" section of `docs/game-design.md`.
       anti-cheat check)
 - [ ] `getLeaderboard` endpoint
 
-Per `docs/architecture.md`.
+Per `docs/architecture.md`. **Build and test this locally, not against real
+Azure** (added 2026-07-15): Azure Functions Core Tools (`func start`) runs
+the Functions runtime locally, and Azurite emulates Table Storage — the
+`Scores`/`RateLimits` logic (insert-only writes, the `RowKey` sort trick,
+rate-limiting) can be fully built and verified against these with zero real
+cloud resource. The one real Azure resource created is the Phase 1
+smoke-deploy — no need to touch it again until Phase 8.
 - **Owner**: `azure-infra`.
 - **Exit condition**: matches the Table Storage schema and anti-cheat formula
   in the specs; runs independent of the frontend (testable via direct calls)
@@ -104,7 +118,9 @@ Per `docs/architecture.md`.
 - [ ] `localStorage` retry queue (retry-safe via shared `submissionGuid`)
 - [ ] Leaderboard polling UI
 
-No sign-in step.
+No sign-in step. Also local-first, same as Phase 5 — the "simulated dropped
+connection" test can be done by killing the local dev server mid-request,
+no real Azure needed.
 - **Owner**: `azure-infra`.
 - **Exit condition**: a full run — play, game over, enter name, score
   submitted, leaderboard updates — works end-to-end, including a simulated
@@ -137,7 +153,10 @@ this phase, no longer a blocker.
 
 Per `docs/architecture.md`'s Runtime concerns and `docs/dev-standards.md`'s
 CI/deploy section — these are all already-decided settings to *verify*, not
-decisions still to make.
+decisions still to make. This is the point real Azure deployment resumes in
+earnest (Phases 5-7 were local-first) — but the pipeline itself was already
+smoke-tested in Phase 1, so this should mostly be confirming things still
+work with real content/code, not discovering the pipeline for the first time.
 - Renamed 2026-07-15 from "Kiosk readiness" — this project has no physical
   venue/kiosk (standalone public web link, anyone plays anytime on their own
   device), so this phase is about the game holding up for any individual
