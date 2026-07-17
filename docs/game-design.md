@@ -357,6 +357,7 @@ All marked non-final — placeholder defaults only, to be set via playtesting:
 | ship acceleration     | TBD         | feel constant                  |
 | ship drag             | TBD         | feel constant                  |
 | spawn jitter range    | TBD         | avoids metronomic spawn timing |
+| survival points/sec   | 10 (points/sec) — TUNABLE, playtest, not final | survival term of the scoring formula (see "Scoring" above); a round arcade-feel default. Survival is the dominant term — candy (value 10 each, ~1 in 4 spawns) is a bonus on top, not the main score driver |
 | max health            | TBD (health units) | starting/maximum player health, see "Health" above |
 | invulnerability window| TBD (ms)    | post-hit grace period          |
 | power-up duration     | 6000 (ms) — TUNABLE, playtest, not final | per `PowerUpDef.durationMs` (Candy Magnet only — Candy Heart is instant, `durationMs: 0`) |

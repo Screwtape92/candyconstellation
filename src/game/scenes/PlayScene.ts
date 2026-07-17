@@ -7,6 +7,7 @@ import { Player } from '../entities/Player'
 import { PowerUp } from '../entities/PowerUp'
 import { HealthSystem } from '../systems/HealthSystem'
 import { PowerUpSystem } from '../systems/PowerUpSystem'
+import { ScoreSystem } from '../systems/ScoreSystem'
 import { SpawnSystem } from '../systems/SpawnSystem'
 
 export class PlayScene extends Phaser.Scene {
@@ -17,7 +18,9 @@ export class PlayScene extends Phaser.Scene {
   private spawnSystem!: SpawnSystem
   private healthSystem!: HealthSystem
   private powerUpSystem!: PowerUpSystem
+  private scoreSystem!: ScoreSystem
   private healthText!: Phaser.GameObjects.Text
+  private scoreText!: Phaser.GameObjects.Text
 
   constructor() {
     super('PlayScene')
@@ -81,11 +84,24 @@ export class PlayScene extends Phaser.Scene {
 
     this.healthSystem = new HealthSystem(this)
     this.powerUpSystem = new PowerUpSystem(this, this.player)
+    // ScoreSystem listens for candyCollected (emitted above); start() zeroes its
+    // clock so elapsed-time scoring begins now, same as SpawnSystem.
+    this.scoreSystem = new ScoreSystem(this)
+    this.scoreSystem.start()
 
     this.healthText = this.add.text(
       16,
       16,
       `Health: ${this.healthSystem.current}`,
+      { fontFamily: 'monospace', fontSize: '20px', color: '#ffffff' },
+    )
+
+    // Unlike Health (event-driven), the score's survival term changes every
+    // frame, so this readout is refreshed in update() rather than on an event.
+    this.scoreText = this.add.text(
+      16,
+      44,
+      `Score: ${this.scoreSystem.current}`,
       { fontFamily: 'monospace', fontSize: '20px', color: '#ffffff' },
     )
 
@@ -103,11 +119,12 @@ export class PlayScene extends Phaser.Scene {
     // HealthSystem's listener cleanup and clears pending timers), so a fresh
     // run starts clean rather than leaking across consecutive restarts.
     this.events.once('gameOver', () => {
-      this.scene.start('GameOverScene')
+      this.scene.start('GameOverScene', { score: this.scoreSystem.current })
     })
   }
 
   update() {
+    this.scoreText.setText(`Score: ${this.scoreSystem.current}`)
     this.player.update()
     this.obstacles.getChildren().forEach((child) => {
       const obstacle = child as Obstacle

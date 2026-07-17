@@ -8,12 +8,21 @@ import { GAME_HEIGHT, GAME_WIDTH } from '../config'
 // is Phase 6 and doesn't exist yet, so this offers only an instant restart
 // back into PlayScene — satisfying the "GameOver → next run near-instant"
 // requirement in docs/game-design.md's "Feel & experience" section.
+// Data passed in by PlayScene on the gameOver transition (scene.start supports
+// a data payload, surfaced as create()'s argument). score is the final run
+// score from ScoreSystem. This is only a readout on this placeholder scene —
+// the full {score, elapsedSec} crossing into a React post-game screen is Phase
+// 6 scope and doesn't exist yet.
+interface GameOverData {
+  score?: number
+}
+
 export class GameOverScene extends Phaser.Scene {
   constructor() {
     super('GameOverScene')
   }
 
-  create() {
+  create(data: GameOverData) {
     this.add
       .text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 40, 'GAME OVER', {
         fontFamily: 'monospace',
@@ -25,7 +34,20 @@ export class GameOverScene extends Phaser.Scene {
     this.add
       .text(
         GAME_WIDTH / 2,
-        GAME_HEIGHT / 2 + 30,
+        GAME_HEIGHT / 2 + 10,
+        `Final Score: ${data.score ?? 0}`,
+        {
+          fontFamily: 'monospace',
+          fontSize: '28px',
+          color: '#ffff55',
+        },
+      )
+      .setOrigin(0.5)
+
+    this.add
+      .text(
+        GAME_WIDTH / 2,
+        GAME_HEIGHT / 2 + 60,
         'Press any key to play again',
         {
           fontFamily: 'monospace',
