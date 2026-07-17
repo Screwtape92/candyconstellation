@@ -27,5 +27,5 @@ export function PhaserGame() {
     }
   }, [])
 
-  return <div ref={containerRef} />
+  return <div ref={containerRef} className="h-full w-full" />
 }
