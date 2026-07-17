@@ -2,6 +2,7 @@ import Phaser from 'phaser'
 
 import { spawnTable } from '../data/spawnTable'
 import { PLAYER_SIZE, PLAYER_TEXTURE_KEY } from '../entities/Player'
+import { PARTICLE_TEXTURE_KEY } from '../systems/JuiceSystem'
 
 // Throwaway placeholder appearance per spriteKey — distinct color/size so the
 // content types are tellable apart while playtesting (obstacles vs collectibles
@@ -64,6 +65,21 @@ export class PreloadScene extends Phaser.Scene {
       const shape = PLACEHOLDERS[entry.spriteKey] ?? DEFAULT_PLACEHOLDER
       this.generateRectTexture(entry.spriteKey, shape.w, shape.h, shape.color)
     }
+
+    // Small white dot for JuiceSystem's bursts; tinted per-burst at runtime.
+    this.generateParticleTexture(PARTICLE_TEXTURE_KEY, 6)
+  }
+
+  private generateParticleTexture(key: string, radius: number) {
+    if (this.textures.exists(key)) {
+      return
+    }
+    const size = radius * 2
+    const graphics = this.make.graphics()
+    graphics.fillStyle(0xffffff, 1)
+    graphics.fillCircle(radius, radius, radius)
+    graphics.generateTexture(key, size, size)
+    graphics.destroy()
   }
 
   private generateRectTexture(

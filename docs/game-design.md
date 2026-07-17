@@ -371,7 +371,8 @@ All marked non-final — placeholder defaults only, to be set via playtesting:
 | spawn ramp rate       | TBD         | see difficulty curve above     |
 | difficulty tier length| TBD (sec)   | see difficulty curve above     |
 | anti-cheat tolerance  | TBD (e.g. 1.15) | see anti-cheat formula above |
-| hit-stop duration     | TBD (ms)    | see "Feel & experience" above  |
-| screen shake intensity| TBD         | see "Feel & experience" above  |
+| hit-stop duration     | 80 (ms) — TUNABLE, playtest, not final | freeze-frame on an accepted hit (physics paused, then resumed); short enough to punctuate impact without stalling the auto-scroll. See "Feel & experience" above |
+| screen shake intensity| 0.01 (fraction of viewport) over 200 (ms) — TUNABLE, playtest, not final | on an accepted hit; deliberately well below Phaser's 0.05 default, which is jarring for a dodger. No motion-sensitivity toggle (see "Feel & experience"). See "Feel & experience" above |
+| particle burst        | 12 particles/burst, cap 60 concurrent alive — TUNABLE, playtest, not final | one-shot burst on hit (red) and on candy/power-up pickup (warm sparkle); the concurrent-alive cap enforces the "explicit caps on active particles" + graceful-degradation rule in `docs/architecture.md` (explode() emits fewer/none rather than exceeding the cap). See "Feel & experience" above |
 | near-miss bonus       | TBD         | see "Feel & experience" above  |
 | opening-difficulty floor duration | TBD (sec) | minimum gentle-start window, see "Feel & experience" above |

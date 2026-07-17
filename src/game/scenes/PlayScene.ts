@@ -6,6 +6,7 @@ import { Obstacle } from '../entities/Obstacle'
 import { Player } from '../entities/Player'
 import { PowerUp } from '../entities/PowerUp'
 import { HealthSystem } from '../systems/HealthSystem'
+import { JuiceSystem } from '../systems/JuiceSystem'
 import { PowerUpSystem } from '../systems/PowerUpSystem'
 import { ScoreSystem } from '../systems/ScoreSystem'
 import { SpawnSystem } from '../systems/SpawnSystem'
@@ -67,6 +68,10 @@ export class PlayScene extends Phaser.Scene {
         // candyCollected — same emit-an-event pattern as playerHit above.
         if (candy.collect()) {
           this.events.emit('candyCollected', candy.value)
+          // Position-carrying sibling of candyCollected, for VFX only — keeps
+          // candyCollected a pure score signal (ScoreSystem needs the value,
+          // not the position). JuiceSystem bursts here.
+          this.events.emit('pickupBurst', { x: candy.x, y: candy.y })
         }
       },
     )
@@ -79,11 +84,18 @@ export class PlayScene extends Phaser.Scene {
       const pickup = powerup as PowerUp
       if (pickup.collect()) {
         this.powerUpSystem.apply(pickup.id)
+        this.events.emit('pickupBurst', { x: pickup.x, y: pickup.y })
       }
     })
 
     this.healthSystem = new HealthSystem(this)
     this.powerUpSystem = new PowerUpSystem(this, this.player)
+    // Event-driven with no per-frame work and no external callers, so it needs
+    // no field — the scene event emitter retains it (via its bound listeners)
+    // for the scene's lifetime. Listens for playerDamaged (hit-stop + shake +
+    // burst) and pickupBurst (burst only) — see docs/game-design.md "Feel &
+    // experience".
+    new JuiceSystem(this)
     // ScoreSystem listens for candyCollected (emitted above); start() zeroes its
     // clock so elapsed-time scoring begins now, same as SpawnSystem.
     this.scoreSystem = new ScoreSystem(this)

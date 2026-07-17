@@ -56,6 +56,11 @@ export class HealthSystem {
       this.invulnerable = false
     })
 
+    // Distinct from `playerHit` (which fires on every overlap frame regardless
+    // of invuln state): `playerDamaged` fires only when damage is actually
+    // applied, and carries the impact point so JuiceSystem can burst there.
+    this.scene.events.emit('playerDamaged', { x: obstacle.x, y: obstacle.y })
+
     this.scene.events.emit('healthChanged', this.health)
 
     if (this.health <= 0) {
