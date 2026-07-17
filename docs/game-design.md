@@ -273,12 +273,14 @@ than being left for whoever writes the code to improvise.
 
 **Game feel ("juice")**
 
+Decided 2026-07-17 (Phase 4 kickoff):
+
 | element | status | notes |
 |---|---|---|
-| hit-stop (brief freeze-frame on impact) | TBD | duration tunable; in/out of MVP scope |
-| screen shake on hit | TBD | intensity tunable; consider a motion-sensitivity toggle |
-| particle burst on pickup/hit | TBD | must respect the particle caps in `docs/architecture.md` |
-| near-miss bonus (small score/visual reward for close dodges) | TBD | in/out of MVP scope |
+| hit-stop (brief freeze-frame on impact) | ✅ In MVP | duration TUNABLE, not final |
+| screen shake on hit | ✅ In MVP, no toggle | intensity TUNABLE, not final. No motion-sensitivity toggle — this is a short-lived event hype piece, not a long-running product, so the extra scope/testing surface wasn't judged worth it. Revisit if playtesting surfaces real discomfort. |
+| particle burst on pickup/hit | ✅ In MVP | must respect the particle caps in `docs/architecture.md`. Already implied by `docs/build-plan.md`'s Phase 4 "Juice" checklist bullet grouping this with hit-stop/screen shake as one package. |
+| near-miss bonus (small score/visual reward for close dodges) | ❌ Deferred, not in MVP | a nice-to-have that adds scope (close-call detection logic) without being core to "does dodging feel good" — revisit post-MVP if there's time. |
 
 **Onboarding (non-gamer audience, first-time visitors)**
 
@@ -286,8 +288,12 @@ Players are colleagues and other visitors opening the link cold, most likely
 on their first attempt, with no assumed gaming literacy.
 
 - The first ~10 seconds must teach the controls without a text tutorial
-  screen — exact mechanism TBD (e.g. a guaranteed-easy opening pattern that
-  demonstrates dodging by itself).
+  screen. **Decided 2026-07-17**: a guaranteed-easy opening pattern — every
+  run's first ~10 seconds spawns obstacles in a predictable, easy-to-dodge
+  arrangement that naturally demonstrates movement, no text/overlay of any
+  kind. This doubles as the difficulty-floor mechanism below (the opening
+  window is inherently gentle by construction, not just by tuning the curve's
+  constants).
 - GameOver → next run must be near-instant (no asset reload, no multi-click
   menu) — so a player who wants another go isn't left waiting on the game
   itself.
