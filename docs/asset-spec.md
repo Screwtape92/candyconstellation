@@ -13,8 +13,13 @@ update it whenever an asset decision changes.
 
 ## Canvas
 
-- 960×540, landscape, fixed aspect ratio (desktop web only — no
-  portrait/mobile sizing).
+- 720×960, portrait, fixed aspect ratio (desktop web only, keyboard/mouse —
+  no mobile/touch sizing or input). Corrected 2026-07-17 from an originally-
+  planned 960×540 landscape canvas — better fit for a vertical dodger's need
+  for player-reaction travel distance; see `docs/architecture.md`'s Platform
+  section for the full reasoning. Still desktop-only, not a mobile/portrait-
+  phone target — "portrait" here describes the fixed canvas shape, not a
+  responsive mobile layout.
 - Pixel-art scale factor: not decided yet — deferred by design, not an open
   gap. **Decided 2026-07-15:** owned by `sprite-integrator`, to be set at
   Phase 7 (`docs/build-plan.md`'s "Real assets" phase) kickoff, once real

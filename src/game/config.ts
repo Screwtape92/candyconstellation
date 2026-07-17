@@ -4,8 +4,8 @@ import { BootScene } from './scenes/BootScene'
 import { PlayScene } from './scenes/PlayScene'
 import { PreloadScene } from './scenes/PreloadScene'
 
-export const GAME_WIDTH = 960
-export const GAME_HEIGHT = 540
+export const GAME_WIDTH = 720
+export const GAME_HEIGHT = 960
 
 export const gameConfig: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,

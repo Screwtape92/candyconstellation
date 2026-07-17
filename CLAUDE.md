@@ -13,8 +13,9 @@ for high scores, classic-arcade style.
 
 ## Scope
 
-Desktop web only — 960×540 landscape canvas, keyboard/mouse input. No
-mobile/touch support.
+Desktop web only — 720×960 portrait canvas, keyboard/mouse input. No
+mobile/touch support. (Corrected 2026-07-17 from an originally-planned
+960×540 landscape canvas — see `docs/architecture.md`'s Platform section.)
 
 ## Ground truth docs
 

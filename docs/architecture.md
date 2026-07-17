@@ -15,8 +15,16 @@ the current-state spec — update it whenever an architectural decision changes.
 - **Auth**: none. Players submit a free-text name at GameOver, classic
   arcade-high-score-table style — no sign-in step, no identity provider. See
   `docs/planning-log.md` ("Sign-in: dropped Entra ID...") for why.
-- **Platform**: desktop web only — 960×540 landscape canvas, keyboard/mouse
-  input. No mobile/touch support.
+- **Platform**: desktop web only — 720×960 portrait canvas, keyboard/mouse
+  input. No mobile/touch support. **Corrected 2026-07-17**: originally
+  planned as a 960×540 landscape canvas, but that dimension was inherited by
+  default from "desktop, not mobile" reasoning rather than a deliberate fit
+  for the genre — playtesting the Phase 2.2 vertical slice surfaced that
+  landscape wasted horizontal space and starved obstacles of vertical travel
+  distance (i.e. player reaction time), which is the opposite of what a
+  vertical dodger needs. Switched to portrait (taller than wide) to match
+  genre precedent (vertical shmups/dodgers), while staying desktop/keyboard-
+  only — no mobile scope reintroduced.
 
 ## Folder structure
 
@@ -139,11 +147,11 @@ invent their own version.
   without reloading the page: leaked timers/listeners compound across
   consecutive runs into a real problem, even if a single run looks fine in
   isolation.
-- **Display/scaling mode**: the canvas is fixed at 960×540, but browser
+- **Display/scaling mode**: the canvas is fixed at 720×960, but browser
   window sizes are unknown and uncontrolled — this is a public web link, so
   every player opens it in their own browser window at whatever size they
   happen to have. Uses Phaser's Scale Manager `FIT` mode
-  (`Phaser.Scale.FIT`): scales the fixed 960×540 canvas to fit the browser
+  (`Phaser.Scale.FIT`): scales the fixed 720×960 canvas to fit the browser
   window while preserving aspect ratio (letterboxing rather than
   stretching/cropping). Chosen because the canvas size is fixed and there's
   no need for responsive UI reflow — a mode like `RESIZE` would only add
