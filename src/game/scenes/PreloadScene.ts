@@ -1,5 +1,6 @@
 import Phaser from 'phaser'
 
+import { OBSTACLE_SIZE, OBSTACLE_TEXTURE_KEY } from '../entities/Obstacle'
 import { PLAYER_SIZE, PLAYER_TEXTURE_KEY } from '../entities/Player'
 
 export class PreloadScene extends Phaser.Scene {
@@ -17,16 +18,21 @@ export class PreloadScene extends Phaser.Scene {
     this.scene.start('PlayScene')
   }
 
-  // Placeholder art until real sprites are wired in — a flat square stands in
-  // for the ship so movement can be built and playtested now.
+  // Placeholder art until real sprites are wired in — flat shapes stand in for
+  // the ship and obstacle so movement/collision can be built and playtested now.
   private generatePlaceholderTextures() {
-    if (this.textures.exists(PLAYER_TEXTURE_KEY)) {
+    this.generateSquareTexture(PLAYER_TEXTURE_KEY, PLAYER_SIZE, 0x8be9fd)
+    this.generateSquareTexture(OBSTACLE_TEXTURE_KEY, OBSTACLE_SIZE, 0xff79c6)
+  }
+
+  private generateSquareTexture(key: string, size: number, color: number) {
+    if (this.textures.exists(key)) {
       return
     }
     const graphics = this.make.graphics()
-    graphics.fillStyle(0x8be9fd, 1)
-    graphics.fillRect(0, 0, PLAYER_SIZE, PLAYER_SIZE)
-    graphics.generateTexture(PLAYER_TEXTURE_KEY, PLAYER_SIZE, PLAYER_SIZE)
+    graphics.fillStyle(color, 1)
+    graphics.fillRect(0, 0, size, size)
+    graphics.generateTexture(key, size, size)
     graphics.destroy()
   }
 }
