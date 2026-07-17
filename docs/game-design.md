@@ -347,6 +347,7 @@ All marked non-final — placeholder defaults only, to be set via playtesting:
 | ship acceleration     | TBD         | feel constant                  |
 | ship drag             | TBD         | feel constant                  |
 | spawn jitter range    | TBD         | avoids metronomic spawn timing |
+| max health            | TBD (health units) | starting/maximum player health, see "Health" above |
 | invulnerability window| TBD (ms)    | post-hit grace period          |
 | power-up duration     | TBD (ms)    | per `PowerUpDef.durationMs` (Candy Magnet only — Candy Heart is instant, `durationMs: 0`) |
 | Candy Heart restore amount | TBD (health units) | amount restored on pickup, capped at `maxHealth` |

@@ -15,7 +15,14 @@ const FALL_SPEED = 220
 // scaffolding — Phase 2.3's HealthSystem replaces this feedback.
 const HIT_FLASH_MS = 120
 
+// TUNABLE — playtest, not final (see docs/game-design.md "Tunables appendix").
+// Placeholder per-hit damage for this single hardcoded obstacle. Phase 3's
+// data-driven spawn table makes this per-entry via SpawnEntry.damage.
+const OBSTACLE_DAMAGE = 1
+
 export class Obstacle extends Phaser.Physics.Arcade.Sprite {
+  readonly damage = OBSTACLE_DAMAGE
+
   private isHit = false
 
   constructor(scene: Phaser.Scene, x: number, y: number) {

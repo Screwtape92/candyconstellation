@@ -3,10 +3,13 @@ import Phaser from 'phaser'
 import { GAME_HEIGHT, GAME_WIDTH } from '../config'
 import { Obstacle } from '../entities/Obstacle'
 import { Player } from '../entities/Player'
+import { HealthSystem } from '../systems/HealthSystem'
 
 export class PlayScene extends Phaser.Scene {
   private player!: Player
   private obstacles!: Phaser.Physics.Arcade.Group
+  private healthSystem!: HealthSystem
+  private healthText!: Phaser.GameObjects.Text
 
   constructor() {
     super('PlayScene')
@@ -29,12 +32,42 @@ export class PlayScene extends Phaser.Scene {
       this.obstacles,
       (_player, obstacle) => {
         const hit = obstacle as Obstacle
-        // Phase 2.3's HealthSystem will listen for this same event to apply
-        // real damage/invulnerability; for now it drives the temporary flash.
+        // HealthSystem listens for this event to apply damage/invulnerability;
+        // it also still drives the temporary hit flash for now.
         this.events.emit('playerHit', hit)
         hit.flashAndRecycle()
       },
     )
+
+    this.healthSystem = new HealthSystem(this)
+
+    this.healthText = this.add.text(
+      16,
+      16,
+      `Health: ${this.healthSystem.current}`,
+      { fontFamily: 'monospace', fontSize: '20px', color: '#ffffff' },
+    )
+
+    const onHealthChanged = (health: number) => {
+      this.healthText.setText(`Health: ${health}`)
+    }
+    this.events.on('healthChanged', onHealthChanged)
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.events.off('healthChanged', onHealthChanged)
+    })
+
+    // Throwaway scaffolding so the gameOver trigger is observable — Phase 2.4
+    // replaces this with the real GameOverScene flow.
+    this.events.once('gameOver', () => {
+      this.physics.pause()
+      this.add
+        .text(GAME_WIDTH / 2, GAME_HEIGHT / 2, 'GAME OVER (placeholder)', {
+          fontFamily: 'monospace',
+          fontSize: '32px',
+          color: '#ff5555',
+        })
+        .setOrigin(0.5)
+    })
   }
 
   update() {
