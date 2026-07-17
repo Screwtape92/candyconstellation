@@ -1,7 +1,26 @@
 import Phaser from 'phaser'
 
-import { OBSTACLE_SIZE, OBSTACLE_TEXTURE_KEY } from '../entities/Obstacle'
+import { spawnTable } from '../data/spawnTable'
 import { PLAYER_SIZE, PLAYER_TEXTURE_KEY } from '../entities/Player'
+
+// Throwaway placeholder appearance per obstacle spriteKey — distinct
+// color/size so the obstacle types are tellable apart while playtesting.
+// Replaced by real PixelLab sprites in Phase 7. jawbreaker is the big block;
+// the tall sour-comet rectangle previews its baked trailing tail / taller
+// hitbox. Not gameplay data — real size comes from the sprite.
+type PlaceholderShape = { w: number; h: number; color: number }
+
+const OBSTACLE_PLACEHOLDERS: Record<string, PlaceholderShape> = {
+  'gummy-meteor': { w: 40, h: 40, color: 0xff79c6 },
+  jawbreaker: { w: 56, h: 56, color: 0xffb86c },
+  'sour-comet': { w: 24, h: 60, color: 0x50fa7b },
+}
+
+const DEFAULT_OBSTACLE_PLACEHOLDER: PlaceholderShape = {
+  w: 40,
+  h: 40,
+  color: 0xaaaaaa,
+}
 
 export class PreloadScene extends Phaser.Scene {
   constructor() {
@@ -19,20 +38,39 @@ export class PreloadScene extends Phaser.Scene {
   }
 
   // Placeholder art until real sprites are wired in — flat shapes stand in for
-  // the ship and obstacle so movement/collision can be built and playtested now.
+  // the ship and each obstacle type so movement/collision/spawning can be
+  // built and playtested now.
   private generatePlaceholderTextures() {
-    this.generateSquareTexture(PLAYER_TEXTURE_KEY, PLAYER_SIZE, 0x8be9fd)
-    this.generateSquareTexture(OBSTACLE_TEXTURE_KEY, OBSTACLE_SIZE, 0xff79c6)
+    this.generateRectTexture(
+      PLAYER_TEXTURE_KEY,
+      PLAYER_SIZE,
+      PLAYER_SIZE,
+      0x8be9fd,
+    )
+
+    for (const entry of spawnTable) {
+      if (entry.kind !== 'obstacle') {
+        continue
+      }
+      const shape =
+        OBSTACLE_PLACEHOLDERS[entry.spriteKey] ?? DEFAULT_OBSTACLE_PLACEHOLDER
+      this.generateRectTexture(entry.spriteKey, shape.w, shape.h, shape.color)
+    }
   }
 
-  private generateSquareTexture(key: string, size: number, color: number) {
+  private generateRectTexture(
+    key: string,
+    width: number,
+    height: number,
+    color: number,
+  ) {
     if (this.textures.exists(key)) {
       return
     }
     const graphics = this.make.graphics()
     graphics.fillStyle(color, 1)
-    graphics.fillRect(0, 0, size, size)
-    graphics.generateTexture(key, size, size)
+    graphics.fillRect(0, 0, width, height)
+    graphics.generateTexture(key, width, height)
     graphics.destroy()
   }
 }

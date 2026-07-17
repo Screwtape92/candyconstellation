@@ -1,72 +1,70 @@
 import Phaser from 'phaser'
 
 import { GAME_HEIGHT, GAME_WIDTH } from '../config'
-
-export const OBSTACLE_TEXTURE_KEY = 'obstacle'
-export const OBSTACLE_SIZE = 40
+import type { SpawnEntry } from '../data/spawnTable'
 
 // TUNABLE — playtest, not final (see docs/game-design.md "Tunables appendix").
-// Single hardcoded placeholder speed; the real per-run value comes from the
-// difficulty curve + spawn table in Phase 3. Arcade Physics integrates this
-// per-second velocity against real frame delta, so it's frame-rate independent.
-const FALL_SPEED = 220
+// Shared base downward speed; each entry's optional speedMultiplier scales it.
+// Phase 3.2's difficulty curve replaces this constant with the per-run
+// obstacleSpeed(t) value. Arcade Physics integrates this per-second velocity
+// against real frame delta, so it's frame-rate independent.
+export const BASE_FALL_SPEED = 220
 
-// How long the hit flash lasts before the obstacle recycles. Throwaway
-// scaffolding — Phase 2.3's HealthSystem replaces this feedback.
+// How long the hit flash lasts before the obstacle is destroyed.
 const HIT_FLASH_MS = 120
 
-// TUNABLE — playtest, not final (see docs/game-design.md "Tunables appendix").
-// Placeholder per-hit damage for this single hardcoded obstacle. Phase 3's
-// data-driven spawn table makes this per-entry via SpawnEntry.damage.
-const OBSTACLE_DAMAGE = 1
-
+// Generic obstacle driven entirely by its SpawnEntry — no branching on
+// specific ids (see docs/dev-standards.md "no god-files"). Obstacles vary by
+// type (texture size, damage, speed), so this uses create-on-spawn /
+// destroy-when-off-screen rather than by-type pooling; the strict no-per-frame-
+// allocation budget in docs/architecture.md is a Phase 8 launch-readiness
+// concern, not a Phase 3 blocker. Never orphaned: every path ends in destroy().
 export class Obstacle extends Phaser.Physics.Arcade.Sprite {
-  readonly damage = OBSTACLE_DAMAGE
+  readonly damage: number
 
+  private readonly fallSpeed: number
   private isHit = false
 
-  constructor(scene: Phaser.Scene, x: number, y: number) {
-    super(scene, x, y, OBSTACLE_TEXTURE_KEY)
+  constructor(scene: Phaser.Scene, entry: SpawnEntry, x: number) {
+    super(scene, x, 0, entry.spriteKey)
 
     scene.add.existing(this)
     scene.physics.add.existing(this)
 
-    this.setVelocityY(FALL_SPEED)
-    this.recycle()
+    this.damage = entry.damage ?? 0
+    this.fallSpeed = BASE_FALL_SPEED * (entry.speedMultiplier ?? 1)
+
+    // Clamp horizontally to stay fully on-screen, and start just above the top.
+    const halfWidth = this.displayWidth / 2
+    this.setPosition(
+      Phaser.Math.Clamp(x, halfWidth, GAME_WIDTH - halfWidth),
+      -this.displayHeight,
+    )
+  }
+
+  // Must be called AFTER adding to a physics group: Phaser.Physics.Arcade.Group
+  // re-applies its body defaults (including velocityY: 0) on Group.add(), which
+  // would clobber a velocity set any earlier — so velocity is asserted here.
+  launch() {
+    this.setVelocityY(this.fallSpeed)
   }
 
   update() {
-    if (this.y > GAME_HEIGHT + OBSTACLE_SIZE) {
-      this.recycle()
+    if (this.y > GAME_HEIGHT + this.displayHeight) {
+      this.destroy()
     }
   }
 
-  // Temporary hit feedback (throwaway — see HIT_FLASH_MS). Guards against the
-  // overlap callback firing every frame during contact, flashes, then recycles.
-  flashAndRecycle() {
+  // Temporary hit feedback (throwaway scaffolding). Guards against the overlap
+  // callback firing every frame during contact, flashes, then destroys.
+  flashAndDestroy() {
     if (this.isHit) {
       return
     }
     this.isHit = true
     this.setTint(0xff5555)
     this.scene.time.delayedCall(HIT_FLASH_MS, () => {
-      this.clearTint()
-      this.recycle()
+      this.destroy()
     })
-  }
-
-  // Reposition above the top of the canvas at a random horizontal offset so a
-  // single obstacle keeps falling forever without leaking or drifting away.
-  // Public: Phaser.Physics.Arcade.Group re-applies its defaults (including
-  // velocityY: 0) to any body added via Group.add(), even one that already
-  // has a body with velocity set — so the caller must call this again right
-  // after adding this obstacle to a physics group, or it'll spawn frozen.
-  recycle() {
-    this.isHit = false
-    this.setPosition(
-      Phaser.Math.Between(OBSTACLE_SIZE, GAME_WIDTH - OBSTACLE_SIZE),
-      -OBSTACLE_SIZE,
-    )
-    this.setVelocityY(FALL_SPEED)
   }
 }
