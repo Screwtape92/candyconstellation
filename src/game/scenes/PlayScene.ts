@@ -56,17 +56,13 @@ export class PlayScene extends Phaser.Scene {
       this.events.off('healthChanged', onHealthChanged)
     })
 
-    // Throwaway scaffolding so the gameOver trigger is observable — Phase 2.4
-    // replaces this with the real GameOverScene flow.
+    // HealthSystem emits gameOver on health <= 0. Per the state machine in
+    // docs/game-design.md, transition to GameOverScene. scene.start shuts this
+    // scene down (firing SHUTDOWN, which triggers this scene's and
+    // HealthSystem's listener cleanup and clears pending timers), so a fresh
+    // run starts clean rather than leaking across consecutive restarts.
     this.events.once('gameOver', () => {
-      this.physics.pause()
-      this.add
-        .text(GAME_WIDTH / 2, GAME_HEIGHT / 2, 'GAME OVER (placeholder)', {
-          fontFamily: 'monospace',
-          fontSize: '32px',
-          color: '#ff5555',
-        })
-        .setOrigin(0.5)
+      this.scene.start('GameOverScene')
     })
   }
 

@@ -29,6 +29,16 @@ pre-game and post-game screens.
 | Phaser | GameOverScene    | PlayScene (health <= 0)             | React post-game screen                      |
 | React  | Post-game (name entry + score submission) | GameOverScene | Name entry → score submission (fire-and-forget) → Leaderboard → Landing |
 
+**Interim (Phase 2, 2026-07-17):** the React post-game screen and the
+Phaser→React EventBus crossing are Phase 6 scope and don't exist yet, so
+`GameOverScene` currently exits straight back into `PlayScene` on any
+key/click for an instant fresh run, rather than to the React post-game
+screen. This restart affordance also satisfies the "GameOver → next run must
+be near-instant" requirement in "Feel & experience" below. The target exit
+(`GameOverScene → React post-game`) in the table above is unchanged — the
+restart is interim scaffolding to be superseded when Phase 6 wires up score
+submission, not a design change to the state machine.
+
 ## Controls
 
 Decided 2026-07-15. Keyboard only — no mouse input for gameplay movement.
