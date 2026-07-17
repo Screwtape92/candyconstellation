@@ -25,7 +25,8 @@ else. A fresh session (local or cloud, yours or a teammate's) should read
 this file to see exactly where the build stands before doing anything else,
 and cross-check against `git log` if a checklist looks stale.
 
-**Overall progress**: 0/9 phases done · ~8 weeks (58 days) to **2026-09-11**
+**Overall progress**: 1/9 phases done (Phase 2) · ~8 weeks (58 days) to
+**2026-09-11**
 — update the phase count here as phases are fully checked off, so it's a
 one-glance answer to "are we on pace."
 
@@ -58,12 +59,20 @@ one-glance answer to "are we on pace."
 
 ## Phase 2 — Core vertical slice
 
-- [ ] Player movement/controls (arrows + WASD, full 4-directional)
-- [ ] One obstacle + collision
-- [ ] Health system (damage, invuln window, health<=0 → GameOver)
-- [ ] Game over flow
+- [x] Player movement/controls (arrows + WASD, full 4-directional)
+- [x] One obstacle + collision
+- [x] Health system (damage, invuln window, health<=0 → GameOver)
+- [x] Game over flow
 
-No power-ups, scoring, or backend yet.
+No power-ups, scoring, or backend yet. **Done 2026-07-17** — user played it
+live twice during the build (via the local dev server) and gave real
+feedback along the way, satisfying the "developer/1-2 colleagues, informal
+gut-check" playtesting step in `docs/game-design.md`'s Playtesting loop
+table: the canvas felt too wide for a vertical dodger (fixed — switched
+960×540 landscape to 720×960 portrait, see `docs/architecture.md`) and a
+single obstacle at a time is too easy (expected at this stage — real spawn
+density/difficulty ramp is Phase 3's data-driven spawn table + difficulty
+curve, not a Phase 2 gap).
 - **Owner**: `game-designer`.
 - **Exit condition**: it's playable and dodging something feels reasonable —
   the fastest possible answer to "is the core loop fun," before investing in
