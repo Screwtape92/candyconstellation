@@ -25,7 +25,7 @@ else. A fresh session (local or cloud, yours or a teammate's) should read
 this file to see exactly where the build stands before doing anything else,
 and cross-check against `git log` if a checklist looks stale.
 
-**Overall progress**: 3/9 phases done (Phases 2-4) · ~8 weeks (58 days) to
+**Overall progress**: 4/9 phases done (Phases 2-5) · ~8 weeks (58 days) to
 **2026-09-11**
 — update the phase count here as phases are fully checked off, so it's a
 one-glance answer to "are we on pace."
@@ -131,11 +131,11 @@ through) before landing, then confirmed against the user's own play. Per the
 
 ## Phase 5 — Backend
 
-- [ ] Azure Static Web App + Functions scaffolding
-- [ ] Table Storage (`Scores`, `RateLimits` tables)
-- [ ] `submitScore` endpoint (insert-only, input validation, rate-limiting,
+- [x] Azure Static Web App + Functions scaffolding
+- [x] Table Storage (`Scores`, `RateLimits` tables)
+- [x] `submitScore` endpoint (insert-only, input validation, rate-limiting,
       anti-cheat check)
-- [ ] `getLeaderboard` endpoint
+- [x] `getLeaderboard` endpoint
 
 Per `docs/architecture.md`. **Build and test this locally, not against real
 Azure** (added 2026-07-15): Azure Functions Core Tools (`func start`) runs
@@ -144,6 +144,17 @@ the Functions runtime locally, and Azurite emulates Table Storage — the
 rate-limiting) can be fully built and verified against these with zero real
 cloud resource. The one real Azure resource created is the Phase 1
 smoke-deploy — no need to touch it again until Phase 8.
+
+**Done 2026-07-20.** Built as 4 sub-slices (Functions+Table Storage scaffolding
+→ `submitScore` → rate-limiting → `getLeaderboard`), each independently
+re-verified against a freshly-started local Azurite + `func start` instance
+before landing — not just trusting the implementing agent's own test run, same
+discipline the frontend phases used with browser automation. This was
+`azure-infra`'s first work in the project; every task held up under independent
+re-verification, in several cases catching things the implementer's own pass
+hadn't covered (a byte-level check that control characters are actually
+stripped from stored names, and data-testing the `getLeaderboard` top-100 hard
+clamp with 100+ real rows rather than only reasoning about the logic).
 - **Owner**: `azure-infra`.
 - **Exit condition**: matches the Table Storage schema and anti-cheat formula
   in the specs; runs independent of the frontend (testable via direct calls)
