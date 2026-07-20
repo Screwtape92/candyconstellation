@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 
+import { enqueue } from '../api-client/retryQueue'
 import { submitScore } from '../api-client/submitScore'
 import type { GameOverPayload } from '../game/eventBus'
 
@@ -24,16 +25,19 @@ export function PostGame({ run, onSubmitted }: PostGameProps) {
     event.preventDefault()
     // Fire-and-forget (docs/architecture.md "Score-submission resilience": the
     // UI proceeds optimistically without awaiting the POST). submissionGuid is
-    // generated once per submission and would be reused across retries once the
-    // Phase 6.3 retry queue lands — until then, a failed submission is only
-    // logged, not recovered.
-    void submitScore({
+    // generated once per submission and reused across retries, so a retried
+    // insert collides on the same RowKey server-side rather than duplicating.
+    const submission = {
       name: name.trim(),
       score: run.score,
       elapsedSec: run.elapsedSec,
       submissionGuid: crypto.randomUUID(),
-    }).catch((err) => {
+    }
+    void submitScore(submission).catch((err) => {
       console.error('submitScore failed', err)
+      // Persist for the App-level retry queue to drain once connectivity
+      // returns, so a dropped connection doesn't lose the score.
+      enqueue(submission)
     })
     onSubmitted()
   }

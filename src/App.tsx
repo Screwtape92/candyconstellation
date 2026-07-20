@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 
+import { drainQueue, RETRY_INTERVAL_MS } from './api-client/retryQueue'
 import {
   eventBus,
   GAME_OVER_EVENT,
@@ -29,6 +30,21 @@ function App() {
     eventBus.on(GAME_OVER_EVENT, onGameOver)
     return () => {
       eventBus.off(GAME_OVER_EVENT, onGameOver)
+    }
+  }, [])
+
+  useEffect(() => {
+    // Drain any submissions left pending from a previous session on load, then
+    // keep retrying on an interval while the app stays open (docs/architecture.md
+    // "Score-submission resilience": retried "on next load or on an interval").
+    // These are background fetches with no UI state gating on them, so they
+    // never block starting a run or navigating the menu.
+    void drainQueue()
+    const intervalId = window.setInterval(() => {
+      void drainQueue()
+    }, RETRY_INTERVAL_MS)
+    return () => {
+      window.clearInterval(intervalId)
     }
   }, [])
 
