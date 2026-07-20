@@ -34,3 +34,18 @@ export async function ensureTablesExist(): Promise<void> {
   await service.createTable(SCORES_TABLE)
   await service.createTable(RATE_LIMITS_TABLE)
 }
+
+// Cache the table-creation so it runs at most once per process (cold start)
+// rather than on every request. createTable is idempotent (it swallows
+// TableAlreadyExists), so this only guards against the extra round-trips, not
+// correctness. Reset to undefined on failure so a transient error can be retried
+// on the next request instead of being permanently cached.
+let tablesReady: Promise<void> | undefined
+
+export function ensureTablesReady(): Promise<void> {
+  tablesReady ??= ensureTablesExist().catch((err) => {
+    tablesReady = undefined
+    throw err
+  })
+  return tablesReady
+}

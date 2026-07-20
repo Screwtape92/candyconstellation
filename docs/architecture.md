@@ -208,9 +208,14 @@ upsert-if-greater/identity-keyed design.
   order directly in the key, since there's no identity to upsert against
   anymore:
   - `invertedScorePadded` = `(fixedOffset - score)`, zero-padded to a fixed
-    digit width (e.g. 10 digits — generous headroom over any plausible score;
-    exact width TBD once the scoring constants in `docs/game-design.md` are
-    finalized). Table Storage returns entities within a partition in
+    digit width. **Chosen (Phase 5.2):** `fixedOffset = 9_999_999_999` and a
+    10-digit pad width (see `api/shared/scoreKey.ts`, `SCORE_OFFSET` /
+    `SCORE_DIGITS`). This is generous headroom: survival earns only 2 pts/sec
+    and the anti-cheat bound keeps even a 24h run's max *accepted* score in the
+    ~10^8 range, so a 10-digit offset sits comfortably above anything that can
+    pass validation. `submitScore` rejects any `score >= fixedOffset` so the
+    subtraction can never go negative (which would break fixed-width padding and
+    thus the sort order). Table Storage returns entities within a partition in
     ascending `RowKey` order, so inverting the score means ascending key
     order = descending score order.
   - `submissionGuid` is a client-generated GUID, unique per run, appended
