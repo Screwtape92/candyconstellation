@@ -25,7 +25,7 @@ else. A fresh session (local or cloud, yours or a teammate's) should read
 this file to see exactly where the build stands before doing anything else,
 and cross-check against `git log` if a checklist looks stale.
 
-**Overall progress**: 4/9 phases done (Phases 2-5) · ~8 weeks (58 days) to
+**Overall progress**: 5/9 phases done (Phases 2-6) · ~8 weeks (58 days) to
 **2026-09-11**
 — update the phase count here as phases are fully checked off, so it's a
 one-glance answer to "are we on pace."
@@ -162,15 +162,30 @@ clamp with 100+ real rows rather than only reasoning about the logic).
 
 ## Phase 6 — Score submission + resilience
 
-- [ ] Free-text name entry on game over
-- [ ] Fire-and-forget score submission
-- [ ] `localStorage` retry queue (retry-safe via shared `submissionGuid`)
-- [ ] Leaderboard polling UI
+- [x] Free-text name entry on game over
+- [x] Fire-and-forget score submission
+- [x] `localStorage` retry queue (retry-safe via shared `submissionGuid`)
+- [x] Leaderboard polling UI
 
 No sign-in step. Also local-first, same as Phase 5 — the "simulated dropped
 connection" test can be done by killing the local dev server mid-request,
 no real Azure needed.
-- **Owner**: `azure-infra`.
+
+**Done 2026-07-20.** Built as 4 sub-slices (React shell + Phaser→React EventBus
+→ fire-and-forget submission → retry queue → leaderboard polling), each
+independently re-verified live before landing — not just trusted from the
+implementing agent's report, same discipline as every phase since Phase 2.
+Actually owned by `game-designer`, not `azure-infra` as originally planned here
+— this work turned out to be almost entirely React/Phaser-integration (the
+EventBus crossing, page routing, the `<PhaserGame>` unmount lifecycle) rather
+than backend/infra work, so the agent whose domain that already was did it
+instead. Notable finds along the way: two real lint failures (`no-dynamic-delete`,
+a Prettier width violation) that only surfaced by actually running the gate,
+never from reading the code; and an explicitly-flagged-as-unproven XSS-safety
+claim on the Leaderboard that was then empirically confirmed by submitting a
+`<script>`-named entry through the real UI and inspecting the rendered DOM
+directly, not just trusting React's documented escaping behavior.
+- **Owner**: `game-designer` (corrected from `azure-infra` — see above).
 - **Exit condition**: a full run — play, game over, enter name, score
   submitted, leaderboard updates — works end-to-end, including a simulated
   dropped connection at submission time.
