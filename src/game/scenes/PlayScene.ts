@@ -137,7 +137,10 @@ export class PlayScene extends Phaser.Scene {
     // HealthSystem's listener cleanup and clears pending timers), so a fresh
     // run starts clean rather than leaking across consecutive restarts.
     this.events.once('gameOver', () => {
-      this.scene.start('GameOverScene', { score: this.scoreSystem.current })
+      this.scene.start('GameOverScene', {
+        score: this.scoreSystem.current,
+        elapsedSec: this.scoreSystem.elapsedSec,
+      })
     })
   }
 

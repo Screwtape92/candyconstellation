@@ -29,15 +29,25 @@ pre-game and post-game screens.
 | Phaser | GameOverScene    | PlayScene (health <= 0)             | React post-game screen                      |
 | React  | Post-game (name entry + score submission) | GameOverScene | Name entry → score submission (fire-and-forget) → Leaderboard → Landing |
 
-**Interim (Phase 2, 2026-07-17):** the React post-game screen and the
-Phaser→React EventBus crossing are Phase 6 scope and don't exist yet, so
-`GameOverScene` currently exits straight back into `PlayScene` on any
-key/click for an instant fresh run, rather than to the React post-game
-screen. This restart affordance also satisfies the "GameOver → next run must
-be near-instant" requirement in "Feel & experience" below. The target exit
-(`GameOverScene → React post-game`) in the table above is unchanged — the
-restart is interim scaffolding to be superseded when Phase 6 wires up score
-submission, not a design change to the state machine.
+**Wired 2026-07-20 (Phase 6.1):** `GameOverScene` now exits to React's
+post-game screen as the table specifies, superseding the Phase 2 interim
+(restart-on-keypress straight back into `PlayScene`). The crossing is a small
+Phaser→React EventBus (`src/game/eventBus.ts`, reusing
+`Phaser.Events.EventEmitter`): `GameOverScene.create()` emits
+`{ score, elapsedSec }` exactly once, and the React shell (`src/App.tsx`)
+swaps the Phaser game out for the post-game name-entry screen
+(`src/pages/PostGame.tsx`). `<PhaserGame>` is mounted only while the game view
+is active, so leaving the run genuinely unmounts/destroys the Phaser.Game
+instance.
+
+Consequence for the "GameOver → next run must be near-instant" requirement in
+"Feel & experience" below: the interim's instant in-Phaser restart is gone.
+Replaying now routes through the React screens (post-game → leaderboard →
+Landing → Play), and a fresh Play re-creates the Phaser.Game
+(BootScene→PreloadScene→PlayScene), which re-runs asset preload. Whether that
+re-init is fast enough to still satisfy "near-instant replay", or whether the
+shell should offer a faster play-again path, is left open for the Phase 6
+build-out / Phase 9 tuning to resolve — not decided here.
 
 ## Controls
 

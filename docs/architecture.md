@@ -31,7 +31,7 @@ the current-state spec — update it whenever an architectural decision changes.
 ```
 src/
   main.tsx, App.tsx
-  pages/           Landing (name entry), Leaderboard
+  pages/           Landing, PostGame (name entry), Leaderboard
   game/
     scenes/        BootScene.ts, PreloadScene.ts, PlayScene.ts, GameOverScene.ts
     systems/        HealthSystem, PowerUpSystem, SpawnSystem, DifficultySystem, ScoreSystem

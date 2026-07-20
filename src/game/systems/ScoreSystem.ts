@@ -35,13 +35,16 @@ export class ScoreSystem {
     this.startTime = this.scene.time.now
   }
 
-  private elapsedSec(): number {
+  // Public: read at GameOver so PlayScene can carry elapsedSec across the
+  // Phaser->React EventBus alongside the final score (docs/architecture.md
+  // "React ⇄ Phaser integration").
+  get elapsedSec(): number {
     return (this.scene.time.now - this.startTime) / 1000
   }
 
   get current(): number {
     return Math.floor(
-      SURVIVAL_POINTS_PER_SEC * this.elapsedSec() + this.candyTally,
+      SURVIVAL_POINTS_PER_SEC * this.elapsedSec + this.candyTally,
     )
   }
 
