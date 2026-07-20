@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 
+import { submitScore } from '../api-client/submitScore'
 import type { GameOverPayload } from '../game/eventBus'
 
 // MUST stay in sync with MAX_NAME_LENGTH in api/shared/inputValidation.ts —
@@ -21,16 +22,18 @@ export function PostGame({ run, onSubmitted }: PostGameProps) {
 
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault()
-    // STUB — Phase 6.2 wires the real fire-and-forget submitScore call here.
-    // The submitted payload will also carry a client-generated submissionGuid
-    // (crypto.randomUUID(), one per run, reused across retries — see
-    // docs/architecture.md "Table Storage schema" / "Score-submission
-    // resilience"). For now this only logs the intended payload and advances
-    // the flow so it's navigable end-to-end.
-    console.info('[stub] submitScore payload', {
+    // Fire-and-forget (docs/architecture.md "Score-submission resilience": the
+    // UI proceeds optimistically without awaiting the POST). submissionGuid is
+    // generated once per submission and would be reused across retries once the
+    // Phase 6.3 retry queue lands — until then, a failed submission is only
+    // logged, not recovered.
+    void submitScore({
       name: name.trim(),
       score: run.score,
       elapsedSec: run.elapsedSec,
+      submissionGuid: crypto.randomUUID(),
+    }).catch((err) => {
+      console.error('submitScore failed', err)
     })
     onSubmitted()
   }
