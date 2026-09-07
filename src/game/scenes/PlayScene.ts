@@ -108,10 +108,10 @@ export class PlayScene extends Phaser.Scene {
     // burst) and pickupBurst (burst only) — see docs/game-design.md "Feel &
     // experience".
     new JuiceSystem(this)
-    // ScoreSystem listens for candyCollected (emitted above); start() zeroes its
-    // clock so elapsed-time scoring begins now, same as SpawnSystem.
+    // ScoreSystem listens for candyCollected (emitted above); its elapsedSec
+    // reads Phaser's own Clock.startTime, so there's no separate start() call
+    // needed to zero its clock (see ScoreSystem.elapsedSec).
     this.scoreSystem = new ScoreSystem(this)
-    this.scoreSystem.start()
 
     this.healthText = this.add.text(
       16,

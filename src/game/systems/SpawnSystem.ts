@@ -37,7 +37,6 @@ export class SpawnSystem {
   private readonly groups: SpawnGroups
   private readonly entries: SpawnEntry[]
   private timer?: Phaser.Time.TimerEvent
-  private startTime = 0
 
   constructor(scene: Phaser.Scene, groups: SpawnGroups) {
     this.scene = scene
@@ -51,12 +50,6 @@ export class SpawnSystem {
   }
 
   start() {
-    // scene.time.now is the Clock's frame time (docs/architecture.md
-    // "Timed/duration triggers"), so elapsedSec() is wall-clock/delta-based and
-    // frame-rate independent. It resets naturally each run since PlayScene
-    // reinitializes SpawnSystem on restart.
-    this.startTime = this.scene.time.now
-
     this.scheduleNext(0)
     this.scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.timer?.remove()
@@ -80,8 +73,23 @@ export class SpawnSystem {
     )
   }
 
+  // Phaser's own Clock.startTime, not a `this.scene.time.now` snapshot taken
+  // in start(): `now` isn't refreshed from the game's real clock until the
+  // scene's next preUpdate, so reading it synchronously inside create() (which
+  // runs mid-frame, in response to the scene's own START event) can capture a
+  // stale, leftover value — 0 on a scene that has never ticked yet, but
+  // whatever number was there from an earlier run otherwise. That only stays
+  // invisible on a run's very first-ever PlayScene, where a fresh Phaser.Game
+  // means both readings happen to be near zero already; it broke every
+  // subsequent "Play again" run, which reuses a fresh Phaser.Game but not a
+  // fresh page, so the shared game-wide clock is already elevated —
+  // `startTime` stuck at the stale ~0 while `now` (correctly) kept climbing
+  // made every restarted run inherit whatever difficulty ramp the previous
+  // run had reached, instead of resetting. `Clock.startTime` is Phaser's own
+  // field for exactly this, set the moment the scene genuinely starts, so it
+  // never has this race.
   private elapsedSec(): number {
-    return (this.scene.time.now - this.startTime) / 1000
+    return (this.scene.time.now - this.scene.time.startTime) / 1000
   }
 
   private spawn() {

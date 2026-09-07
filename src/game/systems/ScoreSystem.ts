@@ -16,12 +16,6 @@ export const SURVIVAL_POINTS_PER_SEC = 2
 export class ScoreSystem {
   private readonly scene: Phaser.Scene
   private candyTally = 0
-  // scene.time.now is the Clock's frame time (docs/architecture.md
-  // "Timed/duration triggers"), so elapsedSec() is delta-based and frame-rate
-  // independent. A second independent clock from SpawnSystem's is fine — both
-  // start within the same frame of PlayScene.create(), so any skew is
-  // irrelevant.
-  private startTime = 0
 
   constructor(scene: Phaser.Scene) {
     this.scene = scene
@@ -31,15 +25,27 @@ export class ScoreSystem {
     })
   }
 
-  start() {
-    this.startTime = this.scene.time.now
-  }
-
   // Public: read at GameOver so PlayScene can carry elapsedSec across the
   // Phaser->React EventBus alongside the final score (docs/architecture.md
   // "React ⇄ Phaser integration").
+  //
+  // Uses Phaser's own Clock.startTime rather than a `this.scene.time.now`
+  // snapshot taken in a start() method: `now` isn't refreshed from the game's
+  // real clock until the scene's next preUpdate, so reading it synchronously
+  // inside create() (mid-frame, in response to the scene's own START event)
+  // can capture a stale, leftover value — 0 on a scene that's never ticked,
+  // whatever a previous run left behind otherwise. That only stayed invisible
+  // on a run's very first-ever PlayScene, where a fresh Phaser.Game means both
+  // readings happen to already be near zero; it broke every subsequent "Play
+  // again" run, which reuses a fresh Phaser.Game but not a fresh page, so the
+  // shared game-wide clock is already elevated — a stale ~0 baseline against a
+  // correctly-climbing `now` made every restarted run's score (and,
+  // identically, SpawnSystem's difficulty ramp) inherit wherever the previous
+  // run had gotten to, instead of resetting. `Clock.startTime` is Phaser's own
+  // field for exactly this, set the moment the scene genuinely starts, so it
+  // never has this race.
   get elapsedSec(): number {
-    return (this.scene.time.now - this.startTime) / 1000
+    return (this.scene.time.now - this.scene.time.startTime) / 1000
   }
 
   get current(): number {
