@@ -7,11 +7,13 @@ import { Player } from '../entities/Player'
 import { PowerUp } from '../entities/PowerUp'
 import { HealthSystem } from '../systems/HealthSystem'
 import { JuiceSystem } from '../systems/JuiceSystem'
+import { ParallaxBackground } from '../systems/ParallaxBackground'
 import { PowerUpSystem } from '../systems/PowerUpSystem'
 import { ScoreSystem } from '../systems/ScoreSystem'
 import { SpawnSystem } from '../systems/SpawnSystem'
 
 export class PlayScene extends Phaser.Scene {
+  private background!: ParallaxBackground
   private player!: Player
   private obstacles!: Phaser.Physics.Arcade.Group
   private collectibles!: Phaser.Physics.Arcade.Group
@@ -28,6 +30,10 @@ export class PlayScene extends Phaser.Scene {
   }
 
   create() {
+    // First, so the starfield sits behind everything added after it (its own
+    // depth keeps it there regardless, but creation order matches intent).
+    this.background = new ParallaxBackground(this)
+
     this.player = new Player(this, GAME_WIDTH / 2, GAME_HEIGHT * 0.75)
 
     // One physics group per kind (docs/architecture.md "Engine patterns"). The
@@ -144,7 +150,8 @@ export class PlayScene extends Phaser.Scene {
     })
   }
 
-  update() {
+  update(_time: number, delta: number) {
+    this.background.update(delta)
     this.scoreText.setText(`Score: ${this.scoreSystem.current}`)
     this.player.update()
     this.obstacles.getChildren().forEach((child) => {

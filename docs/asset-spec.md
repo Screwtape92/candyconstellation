@@ -11,6 +11,66 @@ update it whenever an asset decision changes.
 > undecided; confirm with the user before naming or theming anything not
 > already in the table below.
 
+## Art source — Kenney CC0 packs, not PixelLab (changed 2026-09-07)
+
+Everything below this section was written assuming bespoke PixelLab-generated
+pixel art. **That is not what shipped.** The user supplied two Kenney CC0
+packs instead, and the MVP sprites were built from those:
+
+- `kenney_space-shooter-extension` — player ship, meteor, cloud/puff effect.
+- `kenney_platformer-art-candy` — swirl lollipops, heart, chocolate waffle.
+
+Both packs are committed at the repo root; the specific source PNGs used are
+copied into `public/assets/sprites/` as `src_<entity>.png`, alongside each
+pack's CC0 licence. **This is the current source of truth for art.** The
+PixelLab-flavoured detail below (export naming convention, per-state frame
+counts, the `manifest.json` the `sprite-import` skill validates) describes a
+pipeline that was never used, and is kept only as the record of what was
+planned. What still holds from it: the per-sprite **dimensions** table and the
+size hierarchy it produces, which the Kenney art was fitted to.
+
+### What changed, and why
+
+| spec said | shipped | why |
+|---|---|---|
+| bespoke PixelLab pixel art | Kenney flat vector-style art | user's call — art was never generated, and the beerfest is 2026-09-11 |
+| `pixelArt: true` in `config.ts` | left **false** | that flag exists to keep authored pixel art crisp under nearest-neighbour sampling; Kenney's art is smooth-edged vector export, which nearest-neighbour would only alias. The rendering-dependency note under "Canvas" below is therefore **resolved as not-applicable**, not outstanding |
+| 4-frame authored idle/loop per entity | single static frame + runtime spin | the packs are single-frame. `spinDegPerSec` in `src/game/data/sprites.ts` gives radially-symmetric entities a slow rotation instead, which reads as "alive" for free. `player`, `candy-heart` and `sour-comet` have a fixed orientation and do not spin |
+| `sour-comet` tail baked into loop frames | tail drawn procedurally above the head | no comet in either pack |
+| `candy-star`, `candy-magnet` sprites | drawn procedurally | neither pack has a star or a magnet, and both read better as clean flat shapes at 24-32px than anything croppable out of the packs |
+| hand-authored at exact on-canvas size | trimmed + contain-fitted at load | pack art is tileset/spritesheet frames at 70x70-220x220 with heavy transparent padding. `src/game/textures.ts` alpha-trims, aspect-fits and optionally recolors each one into its spec footprint at boot |
+
+Recoloring is how a pack sprite with the right *silhouette* but the wrong
+palette becomes the right entity — a brown rock becomes Gummy Meteor, a pale
+puff becomes Hop Nebula Dust. It preserves the source art's own shading rather
+than flattening it to one colour.
+
+### Texture frames are padded for rotation
+
+A sprite whose art runs edge to edge in its texture frame renders **clipped**
+once rotated — the part the rotation pushes past the frame rectangle is simply
+cut away, leaving wedges and crescents instead of spinning meteors. On a
+roughly-symmetric shape it is invisible at 0/45/90 degrees, which makes it easy
+to ship by accident; it was caught here only by looking at real frames, not by
+typecheck, lint or reading the code.
+
+So a **spinning** entry's texture frame is a square the length of its art's
+diagonal, with the art centred inside it — the smallest frame that holds the
+art at any rotation. Non-spinning entries keep a frame the exact size of their
+art.
+
+Consequence worth knowing: for a spinning entity, **texture size no longer
+equals hitbox size**. Physics bodies are set from `spriteArtSize()` in
+`src/game/data/sprites.ts`, never inherited from the texture, so the padding
+cannot silently inflate a hitbox. Anything new that derives a footprint from a
+texture must do the same.
+
+### Still outstanding
+
+- **Audio.** Neither supplied pack contains any. The audio spec in
+  `game-design.md` (one looping track + 5 SFX cues) is still unmet, and still
+  needs the manual clip-picking described under "Audio asset sourcing" below.
+
 ## Canvas
 
 - 720×960, portrait, fixed aspect ratio (desktop web only, keyboard/mouse —

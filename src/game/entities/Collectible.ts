@@ -2,6 +2,7 @@ import Phaser from 'phaser'
 
 import { GAME_HEIGHT, GAME_WIDTH } from '../config'
 import type { SpawnEntry } from '../data/spawnTable'
+import { spinFor, spriteArtSize } from '../data/sprites'
 
 // How long the pickup pop/fade plays before the collectible is destroyed.
 const COLLECT_MS = 120
@@ -16,6 +17,7 @@ export class Collectible extends Phaser.Physics.Arcade.Sprite {
   readonly value: number
 
   private readonly fallSpeed: number
+  private readonly spinDegPerSec: number
   private isCollected = false
 
   // baseSpeed is the difficulty curve's obstacleSpeed(t) sampled at spawn time
@@ -37,9 +39,19 @@ export class Collectible extends Phaser.Physics.Arcade.Sprite {
 
     this.value = entry.value ?? 0
     this.fallSpeed = baseSpeed * (entry.speedMultiplier ?? 1)
+    this.spinDegPerSec = spinFor(entry.spriteKey)
+
+    // The texture frame is padded so rotation does not clip the art (see
+    // frameSize in src/game/textures.ts), so the body and the on-screen clamp
+    // both come from the art size � otherwise the padding would silently widen
+    // the playtested hitbox and pull spawns away from the walls.
+    const art = spriteArtSize(entry.spriteKey)
+    if (art) {
+      this.setBodySize(art.w, art.h)
+    }
 
     // Clamp horizontally to stay fully on-screen, and start just above the top.
-    const halfWidth = this.displayWidth / 2
+    const halfWidth = (art?.w ?? this.displayWidth) / 2
     this.setPosition(
       Phaser.Math.Clamp(x, halfWidth, GAME_WIDTH - halfWidth),
       -this.displayHeight,
@@ -51,6 +63,11 @@ export class Collectible extends Phaser.Physics.Arcade.Sprite {
   // would clobber a velocity set any earlier — so velocity is asserted here.
   launch() {
     this.setVelocityY(this.fallSpeed)
+    // Idle spin stands in for the per-entity loop animations the Kenney packs
+    // do not have (see src/game/data/sprites.ts). Asserted here for the same
+    // reason as the velocity above. Arcade bodies stay axis-aligned, so this is
+    // purely visual and leaves the playtested hitbox untouched.
+    this.setAngularVelocity(this.spinDegPerSec)
   }
 
   update() {

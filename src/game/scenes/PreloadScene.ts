@@ -1,39 +1,25 @@
 import Phaser from 'phaser'
 
-import { spawnTable } from '../data/spawnTable'
-import { PLAYER_SIZE, PLAYER_TEXTURE_KEY } from '../entities/Player'
+import { GAME_HEIGHT, GAME_WIDTH } from '../config'
 import { PARTICLE_TEXTURE_KEY } from '../systems/JuiceSystem'
+import {
+  BG_FAR_TEXTURE_KEY,
+  BG_NEAR_TEXTURE_KEY,
+} from '../systems/ParallaxBackground'
+import {
+  bakeSpriteTextures,
+  generateParticleTexture,
+  generateStarfieldTexture,
+  queueSpriteLoads,
+} from '../textures'
 
-// Throwaway placeholder appearance per spriteKey — distinct color/size so the
-// content types are tellable apart while playtesting (obstacles vs collectibles
-// especially, per the visual-readability constraint in docs/game-design.md
-// "Feel & experience"). Replaced by real PixelLab sprites in Phase 7.
-// jawbreaker is the big block; the tall sour-comet rectangle previews its baked
-// trailing tail / taller hitbox. Collectibles are smaller and use a separate
-// bright palette from the obstacle colors so candy reads as pickup-not-hazard
-// at a glance. Not gameplay data — real size comes from the sprite.
-type PlaceholderShape = { w: number; h: number; color: number }
+const PARTICLE_RADIUS = 6
 
-const PLACEHOLDERS: Record<string, PlaceholderShape> = {
-  // obstacles
-  'gummy-meteor': { w: 40, h: 40, color: 0xff79c6 },
-  jawbreaker: { w: 56, h: 56, color: 0xffb86c },
-  'sour-comet': { w: 24, h: 60, color: 0x50fa7b },
-  // collectibles
-  'hop-nebula-dust': { w: 26, h: 26, color: 0xbd93f9 },
-  'malt-meteorite': { w: 26, h: 26, color: 0xf1fa8c },
-  'candy-star': { w: 26, h: 26, color: 0xf8f8f2 },
-  // power-ups — a separate palette again (strong blue / red) so the two bonus
-  // pickups read as distinct from obstacles, collectibles, and each other.
-  'candy-magnet': { w: 30, h: 30, color: 0x2d7dff },
-  'candy-heart': { w: 30, h: 30, color: 0xff2d55 },
-}
-
-const DEFAULT_PLACEHOLDER: PlaceholderShape = {
-  w: 40,
-  h: 40,
-  color: 0xaaaaaa,
-}
+// Two starfield layers, far dim/dense and near brighter/sparser, so the
+// parallax reads as depth (docs/asset-spec.md "Background"). Both stay
+// low-contrast: gameplay sprites have to win the readability contest.
+const FAR_STARFIELD = { count: 260, maxRadius: 1.1, maxAlpha: 0.45 }
+const NEAR_STARFIELD = { count: 70, maxRadius: 2.1, maxAlpha: 0.9 }
 
 export class PreloadScene extends Phaser.Scene {
   constructor() {
@@ -41,60 +27,56 @@ export class PreloadScene extends Phaser.Scene {
   }
 
   preload() {
-    // No real assets yet (sprites/audio arrive in a later phase). A load
-    // progress bar belongs here once there is something to load.
+    this.showLoadingBar()
+    queueSpriteLoads(this)
   }
 
-  create() {
-    this.generatePlaceholderTextures()
+  // Async because baking round-trips each sprite through an image decode (see
+  // addImageTexture in src/game/textures.ts). Phaser does not await create(),
+  // which is fine: nothing renders until PlayScene starts, and that only
+  // happens once every texture is registered.
+  async create() {
+    // Sprite art is baked from the loaded pack PNGs (trim, fit, recolor) and
+    // the procedural entries drawn, all in src/game/textures.ts. Everything
+    // downstream still sizes itself from the resulting texture.
+    await bakeSpriteTextures(this)
+    generateParticleTexture(this, PARTICLE_TEXTURE_KEY, PARTICLE_RADIUS)
+    generateStarfieldTexture(this, BG_FAR_TEXTURE_KEY, {
+      width: GAME_WIDTH,
+      height: GAME_HEIGHT,
+      ...FAR_STARFIELD,
+    })
+    generateStarfieldTexture(this, BG_NEAR_TEXTURE_KEY, {
+      width: GAME_WIDTH,
+      height: GAME_HEIGHT,
+      ...NEAR_STARFIELD,
+    })
+
     this.scene.start('PlayScene')
   }
 
-  // Placeholder art until real sprites are wired in — flat shapes stand in for
-  // the ship and each obstacle type so movement/collision/spawning can be
-  // built and playtested now.
-  private generatePlaceholderTextures() {
-    this.generateRectTexture(
-      PLAYER_TEXTURE_KEY,
-      PLAYER_SIZE,
-      PLAYER_SIZE,
-      0x8be9fd,
-    )
+  // Real assets are small (7 PNGs, well under the load-time budget in
+  // docs/architecture.md), but a bare black canvas during load reads as broken
+  // on a slow connection, so the progress bar exists to say "it is working".
+  private showLoadingBar() {
+    const barWidth = GAME_WIDTH * 0.5
+    const barHeight = 16
+    const x = (GAME_WIDTH - barWidth) / 2
+    const y = GAME_HEIGHT / 2
 
-    for (const entry of spawnTable) {
-      const shape = PLACEHOLDERS[entry.spriteKey] ?? DEFAULT_PLACEHOLDER
-      this.generateRectTexture(entry.spriteKey, shape.w, shape.h, shape.color)
-    }
+    const frame = this.add.graphics()
+    frame.lineStyle(2, 0x8be9fd, 0.8)
+    frame.strokeRect(x - 2, y - 2, barWidth + 4, barHeight + 4)
 
-    // Small white dot for JuiceSystem's bursts; tinted per-burst at runtime.
-    this.generateParticleTexture(PARTICLE_TEXTURE_KEY, 6)
-  }
-
-  private generateParticleTexture(key: string, radius: number) {
-    if (this.textures.exists(key)) {
-      return
-    }
-    const size = radius * 2
-    const graphics = this.make.graphics()
-    graphics.fillStyle(0xffffff, 1)
-    graphics.fillCircle(radius, radius, radius)
-    graphics.generateTexture(key, size, size)
-    graphics.destroy()
-  }
-
-  private generateRectTexture(
-    key: string,
-    width: number,
-    height: number,
-    color: number,
-  ) {
-    if (this.textures.exists(key)) {
-      return
-    }
-    const graphics = this.make.graphics()
-    graphics.fillStyle(color, 1)
-    graphics.fillRect(0, 0, width, height)
-    graphics.generateTexture(key, width, height)
-    graphics.destroy()
+    const fill = this.add.graphics()
+    this.load.on(Phaser.Loader.Events.PROGRESS, (progress: number) => {
+      fill.clear()
+      fill.fillStyle(0x8be9fd, 1)
+      fill.fillRect(x, y, barWidth * progress, barHeight)
+    })
+    this.load.once(Phaser.Loader.Events.COMPLETE, () => {
+      fill.destroy()
+      frame.destroy()
+    })
   }
 }

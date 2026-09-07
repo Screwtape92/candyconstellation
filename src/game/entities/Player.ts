@@ -1,7 +1,6 @@
 import Phaser from 'phaser'
 
-export const PLAYER_TEXTURE_KEY = 'player'
-export const PLAYER_SIZE = 32
+import { PLAYER_TEXTURE_KEY } from '../data/sprites'
 
 // TUNABLE — playtest, not final (see docs/game-design.md "Tunables appendix").
 // Arcade Physics integrates these per-second values against real frame delta,

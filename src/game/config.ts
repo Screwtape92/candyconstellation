@@ -20,7 +20,10 @@ export const gameConfig: Phaser.Types.Core.GameConfig = {
   physics: {
     default: 'arcade',
     arcade: {
-      debug: import.meta.env.DEV,
+      // Opt-in rather than always-on in dev: the body outlines were readable
+      // over flat placeholder rectangles, but they cover the real art. Set
+      // VITE_PHYSICS_DEBUG=true to get them back when tuning hitboxes.
+      debug: import.meta.env.VITE_PHYSICS_DEBUG === 'true',
     },
   },
   scene: [BootScene, PreloadScene, PlayScene, GameOverScene],
