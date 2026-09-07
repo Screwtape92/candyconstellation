@@ -465,6 +465,24 @@ Exact visual treatment — numeric countdown vs. depleting bar vs. shrinking
 icon, and where it sits — is an implementation detail, left to whoever builds
 the HUD.
 
+**Corrected 2026-09-07 (first playtest of this feature):** the corner HUD
+bars alone weren't enough — "not obvious that you have powerups" was the
+direct feedback. Two fixes:
+
+- **On-ship badges, not just a corner readout.** Each active timed power-up
+  now also shows a badge anchored to the ship itself — reusing the power-up's
+  own pickup icon (already legible, already themed) rather than an invented
+  abstract indicator: Sugar Shield as a translucent bubble around the ship,
+  Candy Magnet and Sour Blaster as their own icons flanking it. This is the
+  thing that actually answers "do I have a power-up right now" at a glance;
+  the HUD bars answer "how much longer," a secondary question.
+- **The corner HUD moved from top-left to top-right, depth-boosted above
+  everything.** Top-left, directly under Health/Score, sat in a stretch of
+  screen the player's fully-free-roaming ship can fly through — the bars
+  could end up reading as hidden behind the ship. Top-right is otherwise
+  empty, and the readout now renders at a depth above every gameplay entity
+  and on-ship badge, so this can't recur regardless of where the ship goes.
+
 **Onboarding (non-gamer audience, first-time visitors)**
 
 Players are colleagues and other visitors opening the link cold, most likely
