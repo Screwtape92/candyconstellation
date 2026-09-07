@@ -195,6 +195,152 @@ function drawMagnet(
   }
 }
 
+// Rounded-top, pointed-bottom shield silhouette for Sugar Shield (added
+// 2026-09-07) — sugar-pink fill with a bubblegum-accent border (matching the
+// site's own palette tokens) and a diagonal white candy-stripe highlight, so
+// it reads as "sweet armor" rather than a generic RPG shield icon.
+function drawShield(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+) {
+  const centerX = width / 2
+
+  ctx.beginPath()
+  ctx.moveTo(centerX, height * 0.04)
+  ctx.bezierCurveTo(
+    width * 0.95,
+    0,
+    width * 0.98,
+    height * 0.16,
+    width * 0.92,
+    height * 0.42,
+  )
+  ctx.bezierCurveTo(
+    width * 0.85,
+    height * 0.72,
+    centerX + width * 0.1,
+    height * 0.92,
+    centerX,
+    height,
+  )
+  ctx.bezierCurveTo(
+    centerX - width * 0.1,
+    height * 0.92,
+    width * 0.15,
+    height * 0.72,
+    width * 0.08,
+    height * 0.42,
+  )
+  ctx.bezierCurveTo(
+    width * 0.02,
+    height * 0.16,
+    width * 0.05,
+    0,
+    centerX,
+    height * 0.04,
+  )
+  ctx.closePath()
+
+  ctx.fillStyle = '#ffe1ec'
+  ctx.fill()
+  ctx.lineWidth = width * 0.07
+  ctx.strokeStyle = '#e0567a'
+  ctx.stroke()
+
+  ctx.save()
+  ctx.clip()
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)'
+  ctx.lineWidth = width * 0.14
+  ctx.beginPath()
+  ctx.moveTo(-width * 0.2, height * 0.15)
+  ctx.lineTo(width * 0.55, height * 1.1)
+  ctx.stroke()
+  ctx.restore()
+}
+
+// Compact ray-gun silhouette for Sour Blaster (added 2026-09-07) — barrel +
+// grip in the same bright blue as the projectile it fires (drawBolt below),
+// so the pickup visually foreshadows what firing looks like.
+function drawBlasterIcon(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+) {
+  const bodyColor = '#4dd2ff'
+  const r = height * 0.07
+
+  ctx.fillStyle = bodyColor
+  roundRect(ctx, width * 0.06, height * 0.32, width * 0.82, height * 0.22, r)
+  ctx.fill()
+  roundRect(ctx, width * 0.34, height * 0.5, width * 0.28, height * 0.42, r)
+  ctx.fill()
+
+  ctx.fillStyle = '#e8fbff'
+  roundRect(
+    ctx,
+    width * 0.72,
+    height * 0.36,
+    width * 0.18,
+    height * 0.14,
+    r * 0.5,
+  )
+  ctx.fill()
+}
+
+// Elongated energy bolt for Sour Blaster's projectile — bright core over a
+// darker blue outline, the same hue family as the pickup icon above.
+function drawBolt(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+) {
+  const centerX = width / 2
+
+  ctx.fillStyle = '#2fa8e0'
+  ctx.beginPath()
+  ctx.moveTo(centerX, 0)
+  ctx.lineTo(width, height * 0.32)
+  ctx.lineTo(width * 0.68, height)
+  ctx.lineTo(width * 0.32, height)
+  ctx.lineTo(0, height * 0.32)
+  ctx.closePath()
+  ctx.fill()
+
+  ctx.fillStyle = '#e8fbff'
+  ctx.beginPath()
+  ctx.ellipse(
+    centerX,
+    height * 0.4,
+    width * 0.2,
+    height * 0.3,
+    0,
+    0,
+    Math.PI * 2,
+  )
+  ctx.fill()
+}
+
+// Small helper shared by drawBlasterIcon — canvas's own roundRect exists on
+// modern browsers but isn't universally typed across this project's target
+// set, so a manual path keeps this independent of that.
+function roundRect(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  r: number,
+) {
+  ctx.beginPath()
+  ctx.moveTo(x + r, y)
+  ctx.arcTo(x + w, y, x + w, y + h, r)
+  ctx.arcTo(x + w, y + h, x, y + h, r)
+  ctx.arcTo(x, y + h, x, y, r)
+  ctx.arcTo(x, y, x + w, y, r)
+  ctx.closePath()
+}
+
 // The "trailing tail baked into the loop frames" of docs/asset-spec.md, drawn
 // rather than authored.
 function drawCometTail(
@@ -322,6 +468,12 @@ export function bakeSpriteCanvas(
     drawStar(ctx, visual.w, visual.h)
   } else if (visual.draw === 'magnet') {
     drawMagnet(ctx, visual.w, visual.h)
+  } else if (visual.draw === 'shield') {
+    drawShield(ctx, visual.w, visual.h)
+  } else if (visual.draw === 'blaster') {
+    drawBlasterIcon(ctx, visual.w, visual.h)
+  } else if (visual.draw === 'bolt') {
+    drawBolt(ctx, visual.w, visual.h)
   } else if (visual.file) {
     if (!source) {
       throw new Error(`Sprite "${visual.key}" needs its source image to bake`)

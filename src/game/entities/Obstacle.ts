@@ -7,6 +7,13 @@ import { spinFor, spriteArtSize } from '../data/sprites'
 // How long the hit flash lasts before the obstacle is destroyed.
 const HIT_FLASH_MS = 120
 
+// TUNABLE — playtest, not final (see docs/game-design.md "Tunables
+// appendix", "obstacle hit points"). Tint for a Sour Blaster kill, distinct
+// from the player-collision flash below so "I shot that down" reads
+// differently from "that hit me".
+const PROJECTILE_KILL_TINT = 0xffe066
+const PLAYER_HIT_TINT = 0xff5555
+
 // Generic obstacle driven entirely by its SpawnEntry — no branching on
 // specific ids (see docs/dev-standards.md "no god-files"). Obstacles vary by
 // type (texture size, damage, speed), so this uses create-on-spawn /
@@ -19,6 +26,10 @@ export class Obstacle extends Phaser.Physics.Arcade.Sprite {
   private readonly fallSpeed: number
   private readonly spinDegPerSec: number
   private isHit = false
+  // Shots absorbed from a Sour Blaster projectile before destruction (see
+  // docs/game-design.md "Obstacle durability"). Has no bearing on player
+  // collisions — those always deal `damage` regardless of what's left here.
+  private remainingHitPoints: number
 
   // baseSpeed is the difficulty curve's obstacleSpeed(t) sampled at spawn time
   // (see docs/game-design.md "Difficulty curve"); each entry's optional
@@ -38,6 +49,7 @@ export class Obstacle extends Phaser.Physics.Arcade.Sprite {
     scene.physics.add.existing(this)
 
     this.damage = entry.damage ?? 0
+    this.remainingHitPoints = entry.hitPoints ?? 1
     this.fallSpeed = baseSpeed * (entry.speedMultiplier ?? 1)
     this.spinDegPerSec = spinFor(entry.spriteKey)
 
@@ -83,9 +95,44 @@ export class Obstacle extends Phaser.Physics.Arcade.Sprite {
       return
     }
     this.isHit = true
-    this.setTint(0xff5555)
+    this.setTint(PLAYER_HIT_TINT)
     this.scene.time.delayedCall(HIT_FLASH_MS, () => {
       this.destroy()
     })
+  }
+
+  // Applies Sour Blaster projectile damage (docs/game-design.md "Obstacle
+  // durability"). Returns true if this destroys the obstacle. No-ops if the
+  // obstacle is already dying via another path (e.g. a player collision this
+  // same frame) — `isHit` is shared across both death paths so it can only
+  // die once.
+  takeProjectileHit(damage: number): boolean {
+    if (this.isHit) {
+      return false
+    }
+
+    this.remainingHitPoints -= damage
+    if (this.remainingHitPoints > 0) {
+      this.setTint(PROJECTILE_KILL_TINT)
+      this.scene.time.delayedCall(HIT_FLASH_MS, () => {
+        if (this.active) {
+          this.clearTint()
+        }
+      })
+      return false
+    }
+
+    this.isHit = true
+    // Disable the body immediately (same pattern as Collectible/PowerUp's
+    // collect()), unlike flashAndDestroy above: a destroyed obstacle must not
+    // also register a player collision during its death flash (docs/game-
+    // design.md "Obstacle durability" — destruction and player-collision are
+    // mutually exclusive outcomes for a given obstacle).
+    this.disableBody(false, false)
+    this.setTint(PROJECTILE_KILL_TINT)
+    this.scene.time.delayedCall(HIT_FLASH_MS, () => {
+      this.destroy()
+    })
+    return true
   }
 }

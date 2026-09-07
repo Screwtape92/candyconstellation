@@ -1,6 +1,8 @@
 import {
   CANDY_HEART_RESTORE,
   CANDY_MAGNET_DURATION_MS,
+  SOUR_BLASTER_DURATION_MS,
+  SUGAR_SHIELD_DURATION_MS,
 } from '../game/data/powerUps'
 import { spawnTable } from '../game/data/spawnTable'
 
@@ -110,6 +112,26 @@ export const guideGroups: GuideGroup[] = [
         description:
           'Instant, one time, capped at three. The only way back from a bad clip.',
         stat: { value: `+${CANDY_HEART_RESTORE}`, unit: 'HEALTH' },
+      },
+      {
+        key: 'sugar-shield',
+        name: 'Sugar Shield',
+        description:
+          'Nothing can touch you while it holds. Crash straight through.',
+        stat: {
+          value: String(SUGAR_SHIELD_DURATION_MS / 1000),
+          unit: 'SECONDS',
+        },
+      },
+      {
+        key: 'sour-blaster',
+        name: 'Sour Blaster',
+        description:
+          'Hold SPACE to fire. Some obstacles take more than one hit.',
+        stat: {
+          value: String(SOUR_BLASTER_DURATION_MS / 1000),
+          unit: 'SECONDS',
+        },
       },
     ],
   },

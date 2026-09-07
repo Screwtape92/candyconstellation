@@ -16,12 +16,24 @@ const NEAR_DEPTH = -19
 const FAR_SPEED = 18
 const NEAR_SPEED = 48
 
+// TUNABLE — playtest, not final. The near layer (space-near.webp) is the
+// brighter/warmer of the two user-supplied images (2026-09-07); dimmed here
+// so its golden stars/planets don't compete with gameplay sprites for
+// attention (docs/game-design.md "Visual readability" extension). The far
+// layer needs no dimming — it's already the cooler, lower-contrast image.
+const NEAR_ALPHA = 0.6
+
 /**
- * The two scrolling starfield layers (docs/asset-spec.md "Background"). Scrolls
- * downward, so the player reads as flying up. Both layers are TileSprites over
- * seamlessly-tiling generated textures, so this is two texture-offset writes
- * per frame with no object churn — nothing that touches the per-frame
- * allocation budget in docs/architecture.md.
+ * The two scrolling parallax layers (docs/asset-spec.md "Background"). Scrolls
+ * downward, so the player reads as flying up. Both layers are TileSprites,
+ * each pre-sized to the exact game canvas (scripts/optimize-backgrounds.mjs)
+ * so the full composition is visible before a wrap — user-supplied art
+ * (2026-09-07), not seamlessly-tiling generated textures like the original
+ * placeholder starfield, so a seam is possible right at the wrap point; kept
+ * acceptable by the same low scroll speeds that already made the parallax
+ * read as distant. Either way this is two texture-offset writes per frame
+ * with no object churn — nothing that touches the per-frame allocation
+ * budget in docs/architecture.md.
  */
 export class ParallaxBackground {
   private readonly far: Phaser.GameObjects.TileSprite
@@ -29,13 +41,15 @@ export class ParallaxBackground {
 
   constructor(scene: Phaser.Scene) {
     this.far = this.addLayer(scene, BG_FAR_TEXTURE_KEY, FAR_DEPTH)
-    this.near = this.addLayer(scene, BG_NEAR_TEXTURE_KEY, NEAR_DEPTH)
+    this.near = this.addLayer(scene, BG_NEAR_TEXTURE_KEY, NEAR_DEPTH).setAlpha(
+      NEAR_ALPHA,
+    )
   }
 
   update(delta: number) {
     const seconds = delta / 1000
     // Decreasing the tile offset moves the texture down the screen; TileSprite
-    // wraps it, and the textures tile seamlessly, so this never needs resetting.
+    // wraps it once the offset exceeds the texture's own height.
     this.far.tilePositionY -= FAR_SPEED * seconds
     this.near.tilePositionY -= NEAR_SPEED * seconds
   }

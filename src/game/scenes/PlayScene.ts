@@ -5,9 +5,12 @@ import { Collectible } from '../entities/Collectible'
 import { Obstacle } from '../entities/Obstacle'
 import { Player } from '../entities/Player'
 import { PowerUp } from '../entities/PowerUp'
+import type { Projectile } from '../entities/Projectile'
+import { BlasterSystem, PROJECTILE_DAMAGE } from '../systems/BlasterSystem'
 import { HealthSystem } from '../systems/HealthSystem'
 import { JuiceSystem } from '../systems/JuiceSystem'
 import { ParallaxBackground } from '../systems/ParallaxBackground'
+import { PowerUpHud } from '../systems/PowerUpHud'
 import { PowerUpSystem } from '../systems/PowerUpSystem'
 import { ScoreSystem } from '../systems/ScoreSystem'
 import { SpawnSystem } from '../systems/SpawnSystem'
@@ -18,12 +21,16 @@ export class PlayScene extends Phaser.Scene {
   private obstacles!: Phaser.Physics.Arcade.Group
   private collectibles!: Phaser.Physics.Arcade.Group
   private powerups!: Phaser.Physics.Arcade.Group
+  private projectiles!: Phaser.Physics.Arcade.Group
   private spawnSystem!: SpawnSystem
   private healthSystem!: HealthSystem
   private powerUpSystem!: PowerUpSystem
+  private powerUpHud!: PowerUpHud
+  private blasterSystem!: BlasterSystem
   private scoreSystem!: ScoreSystem
   private healthText!: Phaser.GameObjects.Text
   private scoreText!: Phaser.GameObjects.Text
+  private shieldRing!: Phaser.GameObjects.Arc
 
   constructor() {
     super('PlayScene')
@@ -36,12 +43,25 @@ export class PlayScene extends Phaser.Scene {
 
     this.player = new Player(this, GAME_WIDTH / 2, GAME_HEIGHT * 0.75)
 
+    // Persistent on-ship Sugar Shield indicator (docs/game-design.md "Visual
+    // readability" extension) — deliberately separate from the HUD timer, so
+    // "am I immune right now" is answerable by looking at the ship itself,
+    // not just the corner readout. No stroke color clash with the post-hit
+    // flash: HealthSystem/Obstacle have no invulnerability flicker of their
+    // own for this to be confused with.
+    this.shieldRing = this.add
+      .circle(0, 0, Math.max(this.player.width, this.player.height) * 0.7)
+      .setStrokeStyle(3, 0xffb3c6, 0.9)
+      .setDepth(5)
+      .setVisible(false)
+
     // One physics group per kind (docs/architecture.md "Engine patterns"). The
     // SpawnSystem populates all three from the single data-driven spawn table,
     // routing each row to the group matching its kind.
     this.obstacles = this.physics.add.group()
     this.collectibles = this.physics.add.group()
     this.powerups = this.physics.add.group()
+    this.projectiles = this.physics.add.group()
     this.spawnSystem = new SpawnSystem(this, {
       obstacle: this.obstacles,
       collectible: this.collectibles,
@@ -100,8 +120,29 @@ export class PlayScene extends Phaser.Scene {
       }
     })
 
+    // Sour Blaster's projectile-vs-obstacle collision (docs/game-design.md
+    // "Power-ups" / "Obstacle durability"). Consumed on impact — no piercing
+    // — so a single shot can only ever destroy one obstacle.
+    this.physics.add.overlap(
+      this.projectiles,
+      this.obstacles,
+      (projectile, obstacle) => {
+        const shot = projectile as Projectile
+        const hit = obstacle as Obstacle
+        if (!shot.active || !hit.active) {
+          return
+        }
+        shot.destroy()
+        if (hit.takeProjectileHit(PROJECTILE_DAMAGE)) {
+          this.events.emit('obstacleDestroyed', { x: hit.x, y: hit.y })
+        }
+      },
+    )
+
     this.healthSystem = new HealthSystem(this)
     this.powerUpSystem = new PowerUpSystem(this, this.player)
+    this.powerUpHud = new PowerUpHud(this)
+    this.blasterSystem = new BlasterSystem(this, this.player, this.projectiles)
     // Event-driven with no per-frame work and no external callers, so it needs
     // no field — the scene event emitter retains it (via its bound listeners)
     // for the scene's lifetime. Listens for playerDamaged (hit-stop + shake +
@@ -174,6 +215,24 @@ export class PlayScene extends Phaser.Scene {
       const powerup = child as PowerUp
       powerup.update()
     })
+    this.projectiles.getChildren().forEach((child) => {
+      const projectile = child as Projectile
+      projectile.update()
+    })
     this.powerUpSystem.updateMagnet(this.collectibles)
+    this.blasterSystem.update()
+    this.powerUpHud.update(this.powerUpSystem.activeTimers())
+    this.updateShieldRing()
+  }
+
+  private updateShieldRing() {
+    if (!this.player.shieldActive) {
+      this.shieldRing.setVisible(false)
+      return
+    }
+    this.shieldRing.setPosition(this.player.x, this.player.y)
+    this.shieldRing.setVisible(true)
+    // Slow pulse so it reads as an active field, not a static decal.
+    this.shieldRing.setAlpha(0.6 + 0.3 * Math.sin(this.time.now / 150))
   }
 }

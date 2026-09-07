@@ -80,11 +80,13 @@ curve, not a Phase 2 gap).
 
 ## Phase 3 — Data-driven systems + MVP content
 
-- [x] Power-up system (Candy Magnet, Candy Heart)
+- [x] Power-up system (Candy Magnet, Candy Heart, Sugar Shield, Sour Blaster)
 - [x] Spawn table wired with MVP rows (Gummy Meteor, Jawbreaker, Sour Comet,
       Hop Nebula Dust, Malt Meteorite, Candy Star)
 - [x] Difficulty curve/tiers (decaying-rate, no hard cap)
 - [x] Scoring formula
+- [x] Obstacle durability + Sour Blaster projectiles (added 2026-09-07)
+- [x] Active power-up HUD timer (added 2026-09-07)
 
 **Done 2026-07-17.** Built as 5 sub-slices (spawn table + obstacles → difficulty
 curve → collectibles → power-ups → scoring), each verified live via browser
@@ -102,6 +104,40 @@ one-shot after each spawn. Per `docs/game-design.md`.
   MVP content rows in place using the real, already-approved names (Gummy
   Meteor, Jawbreaker, Sour Comet, Candy Magnet, Candy Heart, Hop Nebula Dust,
   Malt Meteorite, Candy Star — naming session already happened 2026-07-15).
+
+**Extended 2026-09-07** — user request: a visible timer on active power-ups,
+plus two more power-up types (a shield, a gun with "harder to kill" obstacles)
+that were previously an unnamed, undesigned stretch-backlog item (see
+`docs/game-design.md`'s old "2 additional power-ups" note). Design first
+(`game-designer` updated `docs/game-design.md` — new mechanic, not just a
+data row, so it got a design pass before code), then built directly in the
+main session given the runway:
+- **Sugar Shield** — timed full invulnerability, reusing HealthSystem's
+  existing invulnerability check via a new independent `shielded` flag (not
+  sharing the post-hit grace timer, so the two windows can't cancel each
+  other). Own on-ship visual (a pulsing ring), separate from the HUD timer.
+- **Sour Blaster** — new `Space` fire key (new `BlasterSystem`), cooldown-gated
+  projectiles (new `Projectile` entity), and obstacle `hitPoints` (shots to
+  destroy) on the three MVP obstacle rows — jawbreaker toughest, tying the
+  durability number to its own "candy you can't get through" lore. A
+  destroyed obstacle disables its body immediately (mirroring
+  Collectible/PowerUp's `collect()`) so it can't also register a player
+  collision during its death flash.
+- **PowerUpHud** — generic to any timed `PowerUpDef`, not power-up-specific;
+  covers Candy Magnet, Sugar Shield and Sour Blaster today and any future
+  timed row for free.
+- Two new procedural sprites (shield, ray-gun icon + its projectile bolt),
+  same "neither pack has a usable shape" reasoning as the existing
+  magnet/star (`src/game/spriteBaking.ts`).
+- Verified live via Playwright: forced pickups + a flood-spawn/hold-fire
+  stress test confirmed hit-point decrement, obstacle destruction with zero
+  false `playerDamaged` events during the kill, shield blocking a forced
+  `playerHit`, and all three HUD bars rendering — plus the full existing
+  play → game-over → submit → leaderboard flow, unaffected.
+- Also wired in this pass: two user-supplied parallax background images
+  (`docs/asset-spec.md`'s "Background" section, superseding the generated
+  starfield), resized to the exact canvas via a new
+  `scripts/optimize-backgrounds.mjs`.
 
 ## Phase 4 — Feel & experience pass + first playtesting round
 

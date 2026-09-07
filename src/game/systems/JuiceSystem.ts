@@ -30,6 +30,10 @@ const MAX_ALIVE_PARTICLES = 60
 const POPUP_TINT = '#fff2a8'
 const HIT_BURST_TINT = 0xff5555
 const PICKUP_BURST_TINT = 0xfff2a8
+// Distinct from both above: a Sour Blaster kill is neither a hit nor a
+// pickup, and should read as its own thing (matches Obstacle's own
+// PROJECTILE_KILL_TINT flash).
+const OBSTACLE_DESTROYED_TINT = 0xffe066
 
 // TUNABLE — playtest, not final. Floating "+N" score popup on candy pickup:
 // how far it rises (px) and how long it takes to rise + fade before being
@@ -72,10 +76,12 @@ export class JuiceSystem {
     scene.events.on('playerDamaged', this.onPlayerDamaged, this)
     scene.events.on('pickupBurst', this.onPickupBurst, this)
     scene.events.on('candyCollected', this.onCandyCollected, this)
+    scene.events.on('obstacleDestroyed', this.onObstacleDestroyed, this)
     scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       scene.events.off('playerDamaged', this.onPlayerDamaged, this)
       scene.events.off('pickupBurst', this.onPickupBurst, this)
       scene.events.off('candyCollected', this.onCandyCollected, this)
+      scene.events.off('obstacleDestroyed', this.onObstacleDestroyed, this)
     })
   }
 
@@ -87,6 +93,13 @@ export class JuiceSystem {
 
   private onPickupBurst(at: BurstAt) {
     this.burst(at, PICKUP_BURST_TINT)
+  }
+
+  // Sour Blaster killed an obstacle before it reached the player — no hit-stop
+  // or shake (this isn't a damage event), just a distinct-colored burst so it
+  // reads as its own outcome (docs/game-design.md "Obstacle durability").
+  private onObstacleDestroyed(at: BurstAt) {
+    this.burst(at, OBSTACLE_DESTROYED_TINT)
   }
 
   // Floating "+N" arcade score popup at the pickup point. Fires only for

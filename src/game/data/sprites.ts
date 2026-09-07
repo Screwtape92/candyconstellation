@@ -36,7 +36,7 @@ export interface SpriteVisual {
    * magnet, and both read better as clean flat shapes at 24-32px than anything
    * that could be cropped out of the packs.
    */
-  draw?: 'star' | 'magnet'
+  draw?: 'star' | 'magnet' | 'shield' | 'blaster' | 'bolt'
   /**
    * Composite a tapering motion tail above the art, for `sour-comet`'s
    * "trailing tail baked into the loop frames" (docs/asset-spec.md).
@@ -145,6 +145,37 @@ export const spriteVisuals: SpriteVisual[] = [
     w: 38,
     h: 38,
     glow: 0xf9b9d8,
+  },
+  // Added 2026-09-07 (docs/game-design.md "Power-ups"). Both procedurally
+  // drawn, same reasoning as candy-magnet/candy-star above: neither pack has a
+  // usable shield or ray-gun silhouette, and a clean flat shape reads better
+  // at 38px than anything croppable out of them.
+  {
+    key: 'sugar-shield',
+    draw: 'shield',
+    w: 38,
+    h: 38,
+    glow: 0xffb3c6,
+  },
+  {
+    key: 'sour-blaster',
+    draw: 'blaster',
+    w: 38,
+    h: 38,
+    glow: 0x4dd2ff,
+  },
+  // Sour Blaster's projectile — not a spawn-table row (BlasterSystem creates
+  // these directly, not SpawnSystem), so it's baked but never spawned by the
+  // weighted table. Fixed orientation (travels straight up), no glow: it's
+  // neither a collectible nor a power-up pickup, so the binary glow signal
+  // above doesn't apply to it — its own bright, otherwise-unused blue is
+  // enough to read as "not a hazard, not candy" per docs/game-design.md's
+  // visual-readability extension for projectiles.
+  {
+    key: 'sour-blaster-bolt',
+    draw: 'bolt',
+    w: 12,
+    h: 26,
   },
 ]
 

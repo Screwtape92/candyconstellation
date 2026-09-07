@@ -82,6 +82,17 @@ export class PowerUpSystem {
     this.timers.set(def.id, timer)
   }
 
+  // Generic to every timed power-up (docs/game-design.md "Active power-up
+  // readout"), not just Candy Magnet — PowerUpHud polls this each frame to
+  // draw one bar per currently-active id. remainingFraction is 1 at the
+  // moment of pickup/refresh and decays to 0 right as onExpire fires.
+  activeTimers(): Array<{ id: string; remainingFraction: number }> {
+    return [...this.timers.entries()].map(([id, timer]) => ({
+      id,
+      remainingFraction: 1 - timer.getProgress(),
+    }))
+  }
+
   // Candy Magnet's per-frame pull, called from PlayScene.update() with the
   // collectibles group. While the player's magnet flag is set, in-range
   // collectibles are steered toward the player via Arcade Physics'

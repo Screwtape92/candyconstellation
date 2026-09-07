@@ -248,6 +248,20 @@ playtest.
   background even on a busy screen. Two layers is the MVP call (enough depth,
   minimal scope); more is easy to add later but not needed now.
 
+**Superseded 2026-09-07 — real art, not generated.** The user supplied two
+960×1440-ish AI-generated portrait images (candy-galaxy nebulae, ringed
+planets, spiral galaxies) in place of the procedurally-drawn dot starfield
+above. `scripts/optimize-backgrounds.mjs` re-encodes each down to the exact
+game canvas size (720×960 WebP, ~12-16KB) so the full composition is visible
+before a `TileSprite` needs to wrap — not authored to tile seamlessly
+top-to-bottom the way the spec above called for, so a seam is possible right
+at the wrap point. Judged acceptable: both layers still scroll slow enough
+(18/48 px/sec) that a seam, if even noticeable, only appears once every
+20-80 seconds. The brighter of the two (assigned to the near layer) is drawn
+at 60% alpha to hold the "gameplay sprites must stay readable" constraint,
+since it's more saturated than the low-contrast placeholder it replaced. Raw
+sources kept at `public/assets/backgrounds/space-{far,near}-src.png`.
+
 **Note on Candy Heart's animation states vs. Candy Magnet's:** the two
 power-ups have meaningfully different effect shapes (see `game-design.md`'s
 "Power-ups" section — continuous timed vs. one-time instant), and that carries

@@ -100,6 +100,14 @@ export function HowToPlay({ sprites }: { sprites: BakedSprites | null }) {
         </div>
         <div>
           <p className="mb-3 font-mono text-[0.6875rem] tracking-[0.16em] text-dim">
+            FIRE (SOUR BLASTER ONLY)
+          </p>
+          <div className="flex gap-1.5">
+            <Key>SPACE</Key>
+          </div>
+        </div>
+        <div>
+          <p className="mb-3 font-mono text-[0.6875rem] tracking-[0.16em] text-dim">
             STAYING ALIVE
           </p>
           <p className="max-w-[32ch] text-[0.9375rem] font-light text-dim">

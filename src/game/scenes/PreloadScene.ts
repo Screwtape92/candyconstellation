@@ -9,17 +9,10 @@ import {
 import {
   bakeSpriteTextures,
   generateParticleTexture,
-  generateStarfieldTexture,
   queueSpriteLoads,
 } from '../textures'
 
 const PARTICLE_RADIUS = 6
-
-// Two starfield layers, far dim/dense and near brighter/sparser, so the
-// parallax reads as depth (docs/asset-spec.md "Background"). Both stay
-// low-contrast: gameplay sprites have to win the readability contest.
-const FAR_STARFIELD = { count: 260, maxRadius: 1.1, maxAlpha: 0.45 }
-const NEAR_STARFIELD = { count: 70, maxRadius: 2.1, maxAlpha: 0.9 }
 
 export class PreloadScene extends Phaser.Scene {
   constructor() {
@@ -29,6 +22,12 @@ export class PreloadScene extends Phaser.Scene {
   preload() {
     this.showLoadingBar()
     queueSpriteLoads(this)
+    // The two parallax background layers (docs/game-design.md "Visual
+    // readability" extension, 2026-09-07) — user-supplied art, pre-sized to
+    // the exact game canvas (720x960) so the full composition is visible
+    // before a TileSprite needs to wrap (see scripts/optimize-backgrounds.mjs).
+    this.load.image(BG_FAR_TEXTURE_KEY, '/assets/backgrounds/space-far.webp')
+    this.load.image(BG_NEAR_TEXTURE_KEY, '/assets/backgrounds/space-near.webp')
   }
 
   // Async because baking round-trips each sprite through an image decode (see
@@ -41,23 +40,14 @@ export class PreloadScene extends Phaser.Scene {
     // downstream still sizes itself from the resulting texture.
     await bakeSpriteTextures(this)
     generateParticleTexture(this, PARTICLE_TEXTURE_KEY, PARTICLE_RADIUS)
-    generateStarfieldTexture(this, BG_FAR_TEXTURE_KEY, {
-      width: GAME_WIDTH,
-      height: GAME_HEIGHT,
-      ...FAR_STARFIELD,
-    })
-    generateStarfieldTexture(this, BG_NEAR_TEXTURE_KEY, {
-      width: GAME_WIDTH,
-      height: GAME_HEIGHT,
-      ...NEAR_STARFIELD,
-    })
 
     this.scene.start('PlayScene')
   }
 
-  // Real assets are small (7 PNGs, well under the load-time budget in
-  // docs/architecture.md), but a bare black canvas during load reads as broken
-  // on a slow connection, so the progress bar exists to say "it is working".
+  // Real assets are small (a handful of PNGs plus two ~15KB background WebPs,
+  // well under the load-time budget in docs/architecture.md), but a bare
+  // black canvas during load reads as broken on a slow connection, so the
+  // progress bar exists to say "it is working".
   private showLoadingBar() {
     const barWidth = GAME_WIDTH * 0.5
     const barHeight = 16

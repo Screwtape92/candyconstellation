@@ -7,6 +7,11 @@ export interface SpawnEntry {
   minTier: number
   spriteKey: string
   damage?: number // obstacles
+  // Obstacles only: shots absorbed from a Sour Blaster projectile before
+  // destruction (see docs/game-design.md "Obstacle durability"). Has no
+  // effect on player collisions — those still deal `damage` regardless of
+  // remaining hitPoints. Defaults to 1 if omitted.
+  hitPoints?: number
   value?: number // collectibles
   speedMultiplier?: number // optional per-entry override
   // Obstacles only: eligible during the opening onboarding window (see
@@ -59,6 +64,10 @@ export const spawnTable: SpawnEntry[] = [
     minTier: 0,
     spriteKey: 'gummy-meteor',
     damage: 1,
+    // Lowest hitPoints: the common baseline, and the only onboardingSafe row,
+    // so it's also the obstacle a player is most likely shooting at first.
+    // One shot, one kill (docs/game-design.md "MVP content").
+    hitPoints: 1,
     onboardingSafe: true,
   },
   {
@@ -69,6 +78,10 @@ export const spawnTable: SpawnEntry[] = [
     spriteKey: 'jawbreaker',
     damage: 2,
     speedMultiplier: 0.6,
+    // Highest hitPoints, and deliberately not arbitrary: a real jawbreaker is
+    // famously the candy you can't get through, so the durability system
+    // agreeing with the name is the point (docs/game-design.md "MVP content").
+    hitPoints: 4,
   },
   {
     id: 'sour-comet',
@@ -78,6 +91,11 @@ export const spawnTable: SpawnEntry[] = [
     spriteKey: 'sour-comet',
     damage: 1,
     speedMultiplier: 1.4,
+    // Middling hitPoints — its difficulty is already front-loaded into
+    // *hitting* a fast mover with a non-piercing shot, so stacking on top of
+    // that would double-charge the player for the same trait (docs/game-
+    // design.md "MVP content").
+    hitPoints: 2,
   },
   {
     id: 'hop-nebula-dust',
@@ -116,5 +134,22 @@ export const spawnTable: SpawnEntry[] = [
     weight: 4,
     minTier: 0,
     spriteKey: 'candy-heart',
+  },
+  // Added 2026-09-07 alongside Sugar Shield/Sour Blaster (docs/game-design.md
+  // "MVP content") — same low weight as the other two power-up rows, a bonus
+  // rather than a staple.
+  {
+    id: 'sugar-shield',
+    kind: 'powerup',
+    weight: 4,
+    minTier: 0,
+    spriteKey: 'sugar-shield',
+  },
+  {
+    id: 'sour-blaster',
+    kind: 'powerup',
+    weight: 4,
+    minTier: 0,
+    spriteKey: 'sour-blaster',
   },
 ]

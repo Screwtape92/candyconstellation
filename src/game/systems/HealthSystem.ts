@@ -19,6 +19,13 @@ export class HealthSystem {
   private readonly scene: Phaser.Scene
   private health = MAX_HEALTH
   private invulnerable = false
+  // Sugar Shield's flag, mirrored here via `shieldChanged` rather than read
+  // directly off Player (docs/game-design.md "Power-ups") — kept as its own
+  // boolean, independent of `invulnerable`, specifically so the two grace
+  // windows can't cancel each other: a hit taken just before the shield lands
+  // must not have the shield's later expiry clear the post-hit window early,
+  // and the shield expiring must not cancel a post-hit window still running.
+  private shielded = false
 
   constructor(scene: Phaser.Scene) {
     this.scene = scene
@@ -26,9 +33,11 @@ export class HealthSystem {
     // Candy Heart restores health by emitting `heal` — systems talk via events,
     // not direct method calls (docs/architecture.md "Engine patterns").
     scene.events.on('heal', this.heal, this)
+    scene.events.on('shieldChanged', this.onShieldChanged, this)
     scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       scene.events.off('playerHit', this.onPlayerHit, this)
       scene.events.off('heal', this.heal, this)
+      scene.events.off('shieldChanged', this.onShieldChanged, this)
     })
   }
 
@@ -45,8 +54,12 @@ export class HealthSystem {
     this.scene.events.emit('healthChanged', this.health)
   }
 
+  private onShieldChanged(active: boolean) {
+    this.shielded = active
+  }
+
   private onPlayerHit(obstacle: Obstacle) {
-    if (this.invulnerable) {
+    if (this.invulnerable || this.shielded) {
       return
     }
 

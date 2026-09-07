@@ -35,6 +35,13 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   // PowerUpSystem's collectible pull (see docs/game-design.md "Power-ups").
   // A flag rather than a system reference so the effect stays data-driven.
   magnetActive = false
+  // Set true while Sugar Shield is active; read by HealthSystem (via the
+  // `shieldChanged` event, not this field directly — see powerUps.ts) to
+  // block all damage for the window. Same flag-on-player pattern as magnet.
+  shieldActive = false
+  // Set true while Sour Blaster is active; read each frame by BlasterSystem
+  // to gate firing. Same flag-on-player pattern as magnet/shield.
+  blasterActive = false
 
   private readonly keys: MovementKeys
 
