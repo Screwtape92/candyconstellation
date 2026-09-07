@@ -138,12 +138,20 @@ export class PlayScene extends Phaser.Scene {
     })
 
     // HealthSystem emits gameOver on health <= 0. Per the state machine in
-    // docs/game-design.md, transition to GameOverScene. scene.start shuts this
-    // scene down (firing SHUTDOWN, which triggers this scene's and
-    // HealthSystem's listener cleanup and clears pending timers), so a fresh
-    // run starts clean rather than leaking across consecutive restarts.
+    // docs/game-design.md, transition to GameOverScene — paused, not stopped,
+    // and launched as an overlay rather than replacing this scene, so the
+    // frozen field of obstacles/candy stays visible behind the game-over beat
+    // instead of cutting to a blank scene (classic-arcade "everything freezes,
+    // GAME OVER slams on screen"). pause() halts this scene's update loop,
+    // which also freezes its Arcade Physics world and Tweens/Time systems, so
+    // nothing keeps drifting behind the overlay. No stop+start cleanup needed
+    // here the way the old comment warned: React destroys the whole
+    // Phaser.Game the instant GameOverScene hands off to it (PhaserGame.tsx
+    // unmounts on the eventBus emit), so there's nothing left for a leaked
+    // listener/timer to leak into.
     this.events.once('gameOver', () => {
-      this.scene.start('GameOverScene', {
+      this.scene.pause()
+      this.scene.launch('GameOverScene', {
         score: this.scoreSystem.current,
         elapsedSec: this.scoreSystem.elapsedSec,
       })
