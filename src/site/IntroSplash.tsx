@@ -8,10 +8,10 @@ import { useEffect, useState } from 'react'
 // Poolsuite.net is the real, working precedent for "one typed boot-up
 // moment, then everything settles and stays calm" (see the mockup at
 // https://claude.ai/code/artifact/efd948a1-ea8e-4ad9-9d12-6fd388127e85).
-const BOOT_MS = 1500
-const GROW_MS = 900
-const TITLE_MS = 1300
-const FADE_MS = 700
+const BOOT_MS = 2400
+const GROW_MS = 1200
+const TITLE_MS = 1500
+const FADE_MS = 800
 
 type Phase = 'boot' | 'grow' | 'title' | 'out'
 
@@ -88,8 +88,8 @@ export function IntroSplash({ onDone }: { onDone: () => void }) {
               booting
                 ? {
                     width: 0,
-                    animation: `boot-type 0.5s steps(24) forwards`,
-                    animationDelay: `${i * 0.45}s`,
+                    animation: `boot-type 0.65s steps(24) forwards`,
+                    animationDelay: `${i * 0.55}s`,
                   }
                 : { width: '34ch' }
             }
@@ -103,7 +103,7 @@ export function IntroSplash({ onDone }: { onDone: () => void }) {
         src="/assets/site/bottle-960.webp"
         alt=""
         aria-hidden="true"
-        className={`relative w-full max-w-[440px] px-10 transition-all duration-[900ms] ease-out sm:max-w-[560px] ${
+        className={`relative w-full max-w-[440px] px-10 transition-all duration-[1200ms] ease-out sm:max-w-[560px] ${
           grown ? 'scale-100 opacity-100' : 'scale-50 opacity-0'
         }`}
       />
