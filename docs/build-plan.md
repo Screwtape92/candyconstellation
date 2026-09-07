@@ -25,8 +25,8 @@ else. A fresh session (local or cloud, yours or a teammate's) should read
 this file to see exactly where the build stands before doing anything else,
 and cross-check against `git log` if a checklist looks stale.
 
-**Overall progress**: 5/9 phases done (Phases 2-6) · ~8 weeks (58 days) to
-**2026-09-11**
+**Overall progress**: 5/9 phases done (Phases 2-6), Phase 7 sprites done ·
+**4 days** to **2026-09-11**
 — update the phase count here as phases are fully checked off, so it's a
 one-glance answer to "are we on pace."
 
@@ -192,19 +192,42 @@ directly, not just trusting React's documented escaping behavior.
 
 ## Phase 7 — Real assets
 
-- [ ] Obstacle sprites (Gummy Meteor, Jawbreaker, Sour Comet)
-- [ ] Power-up sprites (Candy Magnet, Candy Heart)
-- [ ] Collectible sprites (Hop Nebula Dust, Malt Meteorite, Candy Star)
-- [ ] Player + background sprites
+- [x] Sprite spec sheet: scale factor, dimensions, frame counts
+- [x] Obstacle sprites (Gummy Meteor, Jawbreaker, Sour Comet)
+- [x] Power-up sprites (Candy Magnet, Candy Heart)
+- [x] Collectible sprites (Hop Nebula Dust, Malt Meteorite, Candy Star)
+- [x] Player + parallax starfield background
 - [ ] Audio (Kenney.nl CC0 packs — background loop + 5 SFX cues)
 
-Via `sprite-integrator` and the `sprite-import` skill, per
-`docs/asset-spec.md`. Content naming is already resolved (2026-07-15) — real
-sprites can be sourced/named against the actual entities from day one of
-this phase, no longer a blocker.
-- **Owner**: `sprite-integrator`.
+**Sprites done 2026-09-07 — but not as specced.** The art source changed from
+bespoke PixelLab pixel art to two Kenney CC0 packs the user supplied
+(`kenney_space-shooter-extension`, `kenney_platformer-art-candy`), so the
+`sprite-import` skill's PixelLab-export checklist did not apply and was not
+used. `docs/asset-spec.md`'s new "Art source" section records what changed and
+why. In place of the specced 4-frame idle loops (the packs are single-frame),
+radially-symmetric entities get a runtime spin.
+
+One real bug came out of that spin and is worth remembering: **art that runs
+edge to edge in its texture frame renders clipped when rotated**, so the
+meteors flew as crescents and wedges. Typecheck, lint and a build all passed
+over it — it surfaced only by looking at real rendered frames. The fix (pad a
+spinning sprite's frame to its art's diagonal, and size physics bodies from the
+art rather than the texture) is documented in `asset-spec.md`. Two Playwright
+harnesses written along the way are kept as dev tools: `npm run verify:play`
+(drives a real run, reports live entity/texture state, screenshots) and
+`npm run verify:textures` (renders every baked texture at 6x for eyeballing).
+
+**Audio is the one item still open** — neither supplied pack contains any
+sound, so the audio spec in `game-design.md` is entirely unmet.
+
+Content naming is already resolved (2026-07-15) — real sprites can be
+sourced/named against the actual entities from day one of this phase, no
+longer a blocker.
+- **Owner**: `sprite-integrator` (in practice: done directly in the main
+  session, given the four-day runway).
 - **Exit condition**: every MVP entity has a validated sprite/animation set
   wired in; visual readability holds per the Feel & experience section.
+  Sprites meet this; audio does not.
 
 ## Phase 8 — Launch readiness
 

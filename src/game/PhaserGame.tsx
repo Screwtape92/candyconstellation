@@ -14,6 +14,13 @@ export function PhaserGame() {
         ...gameConfig,
         parent: containerRef.current ?? undefined,
       })
+      if (import.meta.env.DEV) {
+        // Dev-only handle so the running game can be inspected from the browser
+        // console (and by browser automation) while tuning. Stripped from the
+        // production build — see docs/build-plan.md Phase 8's "debug tooling".
+        ;(window as unknown as { __game?: Phaser.Game }).__game =
+          gameRef.current
+      }
     }
 
     return () => {
