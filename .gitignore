@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Local Azurite storage emulator data (Phase 5/6 local-first dev, per
+# docs/architecture.md) - machine-local state, never checked in.
+.azurite-data/

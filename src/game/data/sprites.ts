@@ -49,6 +49,15 @@ export interface SpriteVisual {
    * Omitted where the sprite has a fixed orientation (player, sour-comet).
    */
   spinDegPerSec?: number
+  /**
+   * Soft radial-gradient halo baked behind the art, in this colour. The
+   * player-facing signal is deliberately binary: every collectible and
+   * power-up glows, no obstacle does, so "does it glow" answers "is this safe
+   * to grab" at a glance — added 2026-09-07 after a playtest report that
+   * pickups didn't read as pickups. See docs/asset-spec.md's "Pickup glow"
+   * section for the size bump that came with it.
+   */
+  glow?: number
 }
 
 export const PLAYER_TEXTURE_KEY = 'player'
@@ -89,45 +98,53 @@ export const spriteVisuals: SpriteVisual[] = [
     h: 64,
     tail: true,
   },
-  // Collectibles — three distinct silhouettes at 24px (soft puff / hard-edged
+  // Collectibles — three distinct silhouettes at 30px (soft puff / hard-edged
   // diamond / star) so they stay separable on a busy screen, per the visual
-  // readability constraint in docs/game-design.md.
+  // readability constraint in docs/game-design.md. Bumped from 24px and given
+  // a glow 2026-09-07 (see docs/asset-spec.md "Pickup glow") after a playtest
+  // report that pickups didn't read as pickups against the obstacles.
   {
     key: 'hop-nebula-dust',
     file: 'src_hop-nebula-dust.png',
-    w: 24,
-    h: 24,
+    w: 30,
+    h: 30,
     tint: 0x8fe36b,
     spinDegPerSec: 18,
+    glow: 0x8fe36b,
   },
   {
     key: 'malt-meteorite',
     file: 'src_malt-meteorite.png',
-    w: 24,
-    h: 24,
+    w: 30,
+    h: 30,
     spinDegPerSec: 40,
+    glow: 0xf0c46a,
   },
   {
     key: 'candy-star',
     draw: 'star',
-    w: 24,
-    h: 24,
+    w: 30,
+    h: 30,
     spinDegPerSec: 60,
+    glow: 0xffd54a,
   },
-  // Power-ups — both 32px, between the collectibles and the obstacles, so the
-  // two read as one class (docs/asset-spec.md).
+  // Power-ups — both 38px (up from 32px, same 2026-09-07 pass), between the
+  // collectibles and the obstacles, so the two read as one class
+  // (docs/asset-spec.md).
   {
     key: 'candy-magnet',
     draw: 'magnet',
-    w: 32,
-    h: 32,
+    w: 38,
+    h: 38,
     spinDegPerSec: 20,
+    glow: 0xff6b6b,
   },
   {
     key: 'candy-heart',
     file: 'src_candy-heart.png',
-    w: 32,
-    h: 32,
+    w: 38,
+    h: 38,
+    glow: 0xf9b9d8,
   },
 ]
 

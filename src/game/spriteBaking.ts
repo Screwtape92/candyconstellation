@@ -36,6 +36,13 @@ function cssColor(hex: number) {
   return `#${hex.toString(16).padStart(6, '0')}`
 }
 
+function rgba(hex: number, alpha: number) {
+  const r = (hex >> 16) & 0xff
+  const g = (hex >> 8) & 0xff
+  const b = hex & 0xff
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`
+}
+
 type Bounds = { x: number; y: number; w: number; h: number }
 
 // Falls back to the full image for a fully transparent source rather than
@@ -210,8 +217,51 @@ function drawCometTail(
   ctx.fill()
 }
 
+// How far a glow blooms beyond the art's own half-width/height. All glowing
+// entries are square (w === h), so this is expressed as a multiple of that
+// rather than of the diagonal — simpler, and already comfortably bigger than
+// the diagonal-based rotation-safety margin below for every current entry.
+const GLOW_RADIUS_FACTOR = 1.6
+
+function glowRadius(visual: SpriteVisual) {
+  return (Math.max(visual.w, visual.h) / 2) * GLOW_RADIUS_FACTOR
+}
+
+// Soft radial-gradient halo, baked behind the art rather than applied as a
+// runtime FX: this Phaser version has no per-GameObject glow (the FX pipeline
+// from Phaser 3.60 was replaced by camera-level Filters in Phaser 4, which
+// apply to everything a camera renders, not one sprite) — see
+// docs/asset-spec.md "Pickup glow" for that dead end. Three gradient stops
+// taper the glow out gradually rather than in one linear fade, which reads as
+// softer light rather than a hard-edged coloured disc.
+function drawGlow(
+  ctx: CanvasRenderingContext2D,
+  centerX: number,
+  centerY: number,
+  radius: number,
+  color: number,
+) {
+  const gradient = ctx.createRadialGradient(
+    centerX,
+    centerY,
+    0,
+    centerX,
+    centerY,
+    radius,
+  )
+  gradient.addColorStop(0, rgba(color, 0.55))
+  gradient.addColorStop(0.55, rgba(color, 0.25))
+  gradient.addColorStop(1, rgba(color, 0))
+
+  ctx.fillStyle = gradient
+  ctx.beginPath()
+  ctx.arc(centerX, centerY, radius, 0, Math.PI * 2)
+  ctx.fill()
+}
+
 /**
- * Texture frame for an entry, larger than its art when the entry spins.
+ * Texture frame for an entry, larger than its art when the entry spins or
+ * glows.
  *
  * A sprite whose art runs edge to edge in its frame renders CLIPPED once
  * rotated: whatever the rotation pushes past the frame rectangle is cut away,
@@ -221,15 +271,22 @@ function drawCometTail(
  *
  * A square frame the length of the art's diagonal is the smallest one that can
  * hold the art at *any* rotation, so the padding is exact rather than guessed.
- * Physics bodies are sized from spriteArtSize(), never from the frame, so this
- * never widens a hitbox.
+ * A glow needs its own, usually larger, margin to keep its soft edge from
+ * being cut off — see glowRadius() above. Physics bodies are sized from
+ * spriteArtSize(), never from the frame, so neither ever widens a hitbox.
  */
 export function frameSize(visual: SpriteVisual) {
-  if (!visual.spinDegPerSec) {
+  if (!visual.spinDegPerSec && !visual.glow) {
     return { w: visual.w, h: visual.h }
   }
-  const diagonal = Math.ceil(Math.hypot(visual.w, visual.h))
-  return { w: diagonal, h: diagonal }
+  let halfSize = visual.spinDegPerSec
+    ? Math.hypot(visual.w, visual.h) / 2
+    : Math.max(visual.w, visual.h) / 2
+  if (visual.glow) {
+    halfSize = Math.max(halfSize, glowRadius(visual))
+  }
+  const side = Math.ceil(halfSize * 2)
+  return { w: side, h: side }
 }
 
 /**
@@ -247,6 +304,12 @@ export function bakeSpriteCanvas(
   // Everything below draws in art-box coordinates; the frame's padding is just
   // a translation.
   ctx.translate((frame.w - visual.w) / 2, (frame.h - visual.h) / 2)
+
+  // Glow first, so the art draws on top of it rather than the halo covering
+  // the art's own edges.
+  if (visual.glow) {
+    drawGlow(ctx, visual.w / 2, visual.h / 2, glowRadius(visual), visual.glow)
+  }
 
   // A tailed sprite reserves the top of its art box for the trail and fits the
   // art into a square at the bottom, so the head leads as it falls.

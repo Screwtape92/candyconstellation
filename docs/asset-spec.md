@@ -65,6 +65,33 @@ equals hitbox size**. Physics bodies are set from `spriteArtSize()` in
 cannot silently inflate a hitbox. Anything new that derives a footprint from a
 texture must do the same.
 
+### Pickup glow (added 2026-09-07)
+
+A playtest report: pickups didn't read as pickups against the obstacles —
+both are round-ish blobs at a glance, and nothing about a collectible or
+power-up said "safe to grab" the way the hazards' size hierarchy said
+"dodge". Two changes landed together:
+
+- **Every collectible and power-up now has a soft radial-gradient glow baked
+  behind its art**, in a colour matching the entity (green for Hop Nebula
+  Dust, gold for Malt Meteorite and Candy Star, red for Candy Magnet, pink for
+  Candy Heart). **No obstacle glows.** The signal is deliberately binary —
+  glow means pickup, full stop — rather than a per-entity styling choice.
+- **Collectibles grew from 24px to 30px, power-ups from 32px to 38px.** The
+  size *hierarchy* from "Pixel dimensions" below is unchanged (collectibles <
+  power-ups < player < obstacles) — pickups moved up a notch within it, they
+  didn't jump the order.
+
+This runs into the same dead end as a runtime FX would: Phaser 4 has no
+per-GameObject glow (the FX pipeline from Phaser 3.60 was replaced by
+camera-level Filters, which apply to everything a camera renders, not one
+sprite), so the glow is baked into the texture the same way the comet tail and
+the procedural star/magnet are. `frameSize()` in `src/game/spriteBaking.ts`
+now also pads a glowing entry's frame to fit the halo without clipping it,
+independent of the rotation-safety padding above — see that function's
+comment for the exact margin. As with rotation padding, this changes texture
+size, never hitbox size: bodies still come from `spriteArtSize()`.
+
 ### Still outstanding
 
 - **Audio.** Neither supplied pack contains any. The audio spec in
@@ -155,6 +182,13 @@ placeholder colours are gone, silhouette does the heavy lifting: the
 star/heart/magnet shapes and the astronaut ship are all distinct at a glance,
 and the three round collectibles stay separable by their 24 px silhouettes
 (dust cloud vs. grain vs. star) plus palette.
+
+**Superseded 2026-09-07 for the five pickups** — see "Pickup glow" above.
+Collectibles ship at **30×30** (not 24×24) and power-ups at **38×38** (not
+32×32); the hierarchy itself (collectibles < power-ups < player < obstacles)
+is unchanged, only the two smaller tiers moved up within it. `gummy-meteor`,
+`jawbreaker`, `sour-comet`, `ship` and `background` are all still exactly as
+this table says.
 
 **Feel note for `game-designer` (per the handoff rule — I don't edit
 `hitboxScale` myself):** these are *untrimmed* authored canvas sizes. Measured
