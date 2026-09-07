@@ -3,6 +3,7 @@ import { SURVIVAL_POINTS_PER_SEC } from '../game/systems/ScoreSystem'
 import { guideGroups, type GuideEntry } from './entityGuide'
 import { Roundel, SectionHeading } from './ui'
 import type { BakedSprites } from './useBakedSprites'
+import { useReveal } from './useReveal'
 
 // One scale for every sprite. A spinning entity's texture is padded around its
 // art (see frameSize in src/game/spriteBaking.ts), so applying the same factor
@@ -30,7 +31,7 @@ function EntityCard({
   sprite: BakedSprites[string] | undefined
 }) {
   return (
-    <article className="flex flex-col bg-panel p-6">
+    <article className="flex flex-col bg-panel p-6 transition-colors duration-200 hover:bg-panel-hi">
       <div className="flex h-32 items-center justify-center max-sm:h-24">
         {sprite && (
           <img
@@ -55,10 +56,12 @@ function EntityCard({
 }
 
 export function HowToPlay({ sprites }: { sprites: BakedSprites | null }) {
+  const [revealRef, revealClass] = useReveal<HTMLElement>()
   return (
     <section
       id="how"
-      className="mx-auto max-w-[1160px] border-t border-rim px-[clamp(1.25rem,4vw,3.5rem)] py-[clamp(3.5rem,8vw,5.75rem)]"
+      ref={revealRef}
+      className={`mx-auto max-w-[1160px] border-t border-rim px-[clamp(1.25rem,4vw,3.5rem)] py-[clamp(3.5rem,8vw,5.75rem)] ${revealClass}`}
     >
       <SectionHeading
         eyebrow="Field manual"

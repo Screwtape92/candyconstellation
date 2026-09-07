@@ -1,14 +1,17 @@
 import { PlayButton, SectionHeading } from './ui'
+import { useReveal } from './useReveal'
 
 // The occasion. Deliberately not an information panel — the audience already
 // knows the date, time and venue, so the section's job is to hand people back
 // to the game rather than tell them what they know.
 
 export function BeerfestSection({ onPlay }: { onPlay: () => void }) {
+  const [revealRef, revealClass] = useReveal<HTMLElement>()
   return (
     <section
       id="fest"
-      className="mx-auto max-w-[1160px] border-t border-rim px-[clamp(1.25rem,4vw,3.5rem)] py-[clamp(3.5rem,8vw,5.75rem)]"
+      ref={revealRef}
+      className={`mx-auto max-w-[1160px] border-t border-rim px-[clamp(1.25rem,4vw,3.5rem)] py-[clamp(3.5rem,8vw,5.75rem)] ${revealClass}`}
     >
       <SectionHeading
         eyebrow="The occasion"

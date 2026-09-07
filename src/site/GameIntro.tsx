@@ -1,6 +1,7 @@
 import { CandyField } from './CandyField'
 import { AnchorButton, Eyebrow, PlayButton } from './ui'
 import type { BakedSprites } from './useBakedSprites'
+import { useReveal } from './useReveal'
 
 // Act two: the game, with the real field drifting behind it.
 
@@ -11,6 +12,7 @@ export function GameIntro({
   sprites: BakedSprites | null
   onPlay: () => void
 }) {
+  const [revealRef, revealClass] = useReveal<HTMLDivElement>()
   return (
     <section
       id="game"
@@ -21,7 +23,10 @@ export function GameIntro({
       {/* Darkens the copy side only, so the field stays visible on the right. */}
       <div className="pointer-events-none absolute inset-0 [background-image:linear-gradient(100deg,var(--color-night)_0%,color-mix(in_srgb,var(--color-night)_80%,transparent)_40%,transparent_70%),linear-gradient(to_bottom,color-mix(in_srgb,var(--color-night-deep)_70%,transparent)_0%,transparent_22%,transparent_70%,var(--color-night-deep)_100%)]" />
 
-      <div className="relative z-10 mx-auto max-w-[1160px] px-[clamp(1.25rem,4vw,3.5rem)] py-[clamp(3.5rem,9vw,6.5rem)]">
+      <div
+        ref={revealRef}
+        className={`relative z-10 mx-auto max-w-[1160px] px-[clamp(1.25rem,4vw,3.5rem)] py-[clamp(3.5rem,9vw,6.5rem)] ${revealClass}`}
+      >
         <Eyebrow>The run</Eyebrow>
 
         <h2 className="mt-3 mb-5 max-w-[12ch] font-display text-[clamp(2.5rem,8vw,5.25rem)] leading-[0.92] font-extrabold text-taffy [text-shadow:0_4px_0_color-mix(in_srgb,var(--color-night-deep)_60%,transparent)]">
@@ -44,6 +49,16 @@ export function GameIntro({
             Desktop &amp; keyboard · no sign-in · ~2 min a run
           </span>
         </div>
+
+        <a
+          href="#how"
+          className="mt-9 inline-flex items-center gap-2 font-mono text-xs tracking-[0.12em] text-sky-candy hover:text-cream"
+        >
+          HOW TO PLAY{' '}
+          <span className="cue-bob" aria-hidden="true">
+            ↓
+          </span>
+        </a>
       </div>
     </section>
   )

@@ -3,14 +3,15 @@ import { LeaderboardTable } from '../site/LeaderboardTable'
 import { PlayButton } from '../site/ui'
 
 interface LeaderboardProps {
-  onBack: () => void
+  onPlayAgain: () => void
+  onBackToHome: () => void
 }
 
 // Full-screen leaderboard, reached after a post-game submission (docs/game-
 // design.md state machine). The same LeaderboardTable the landing page's inline
 // board section uses, at the full top-100 depth rather than the page's
 // front-page-of-ten slice.
-export function Leaderboard({ onBack }: LeaderboardProps) {
+export function Leaderboard({ onPlayAgain, onBackToHome }: LeaderboardProps) {
   const { entries, staleRefresh } = useLeaderboard()
 
   return (
@@ -23,9 +24,12 @@ export function Leaderboard({ onBack }: LeaderboardProps) {
         <LeaderboardTable entries={entries} staleRefresh={staleRefresh} />
       </div>
 
-      <PlayButton onClick={onBack} variant="ghost">
-        Back
-      </PlayButton>
+      <div className="flex flex-wrap items-center justify-center gap-4">
+        <PlayButton onClick={onPlayAgain}>Play again</PlayButton>
+        <PlayButton onClick={onBackToHome} variant="ghost">
+          Back to home page
+        </PlayButton>
+      </div>
     </div>
   )
 }

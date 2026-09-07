@@ -58,7 +58,10 @@ export function AleHero() {
             href="#game"
             className="mt-9 inline-flex items-center gap-2 font-mono text-xs tracking-[0.12em] text-sky-candy hover:text-cream"
           >
-            FLY IT YOURSELF <span aria-hidden="true">↓</span>
+            FLY IT YOURSELF{' '}
+            <span className="cue-bob" aria-hidden="true">
+              ↓
+            </span>
           </a>
         </div>
 

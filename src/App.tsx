@@ -10,6 +10,7 @@ import { PhaserGame } from './game/PhaserGame'
 import { Landing } from './pages/Landing'
 import { Leaderboard } from './pages/Leaderboard'
 import { PostGame } from './pages/PostGame'
+import { IntroSplash } from './site/IntroSplash'
 
 // React owns the shell and switches between screens with plain state — there's
 // one screen transitioning to another, not deep-linkable routes, so a router
@@ -25,6 +26,9 @@ const SCROLLING_VIEWS: View[] = ['landing', 'leaderboard']
 function App() {
   const [view, setView] = useState<View>('landing')
   const [lastRun, setLastRun] = useState<GameOverPayload | null>(null)
+  // Landing is already mounted underneath the whole time — this is a
+  // full-screen overlay that clears, not a route the real page waits behind.
+  const [showSplash, setShowSplash] = useState(true)
 
   useEffect(() => {
     // The single Phaser->React crossing: GameOverScene emits once per run. Swap
@@ -70,8 +74,12 @@ function App() {
         <PostGame run={lastRun} onSubmitted={() => setView('leaderboard')} />
       )}
       {view === 'leaderboard' && (
-        <Leaderboard onBack={() => setView('landing')} />
+        <Leaderboard
+          onPlayAgain={() => setView('playing')}
+          onBackToHome={() => setView('landing')}
+        />
       )}
+      {showSplash && <IntroSplash onDone={() => setShowSplash(false)} />}
     </div>
   )
 }
