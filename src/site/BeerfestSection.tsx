@@ -1,4 +1,4 @@
-import { PlayButton, SectionHeading } from './ui'
+import { PlayButton, SectionHeading, WindowFrame } from './ui'
 import { useReveal } from './useReveal'
 
 // The occasion. Deliberately not an information panel — the audience already
@@ -37,7 +37,7 @@ export function BeerfestSection({ onPlay }: { onPlay: () => void }) {
           </div>
         </div>
 
-        <figure className="m-0 overflow-hidden rounded-xl border border-rim">
+        <WindowFrame title="label.iff — 96 colours">
           <img
             src="/assets/site/label-720.webp"
             srcSet="/assets/site/label-360.webp 360w, /assets/site/label-720.webp 720w"
@@ -47,7 +47,7 @@ export function BeerfestSection({ onPlay }: { onPlay: () => void }) {
             alt="The Candy Constellation bottle label: an astronaut planting a flag on a pink candy moon, with signposts to Gummy Nebula, Lollipop Lane and Marshmallow Moon."
             className="block w-full"
           />
-        </figure>
+        </WindowFrame>
       </div>
     </section>
   )

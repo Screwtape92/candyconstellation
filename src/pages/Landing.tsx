@@ -3,7 +3,7 @@ import { BeerfestSection } from '../site/BeerfestSection'
 import { GameIntro } from '../site/GameIntro'
 import { HowToPlay } from '../site/HowToPlay'
 import { LeaderboardSection } from '../site/LeaderboardSection'
-import { SiteFooter, SiteNav } from '../site/SiteChrome'
+import { SiteFooter, SiteNav, SiteTaskbar } from '../site/SiteChrome'
 import { useBakedSprites } from '../site/useBakedSprites'
 
 interface LandingProps {
@@ -31,6 +31,7 @@ export function Landing({ onPlay }: LandingProps) {
         <BeerfestSection onPlay={onPlay} />
       </main>
       <SiteFooter />
+      <SiteTaskbar />
     </div>
   )
 }

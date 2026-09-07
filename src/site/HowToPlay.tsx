@@ -17,7 +17,13 @@ const CANDY_VALUE = guideGroups[1].entries[0].stat.value
 
 function Key({ children }: { children: string }) {
   return (
-    <span className="min-w-9 rounded-md border border-b-[3px] border-rim bg-panel-hi px-2 py-1.5 text-center font-mono text-[0.8125rem] font-bold text-cream">
+    // font-normal, not font-bold: Silkscreen's bold weight draws W/M as a
+    // decorative notched glyph (a real design choice in the typeface, not a
+    // bug) that's genuinely hard to read as the letter it is — confirmed by
+    // rendering the full alphabet at both weights side by side. Regular
+    // weight is unambiguous, which matters more here than boldness for a key
+    // someone actually needs to read and press.
+    <span className="min-w-9 border-2 border-rim bg-panel-hi px-2 py-1.5 text-center font-mono text-[0.9375rem] font-normal text-cream shadow-[inset_-2px_-2px_0_rgba(0,0,0,0.35),inset_2px_2px_0_rgba(255,255,255,0.12)]">
       {children}
     </span>
   )
@@ -31,7 +37,7 @@ function EntityCard({
   sprite: BakedSprites[string] | undefined
 }) {
   return (
-    <article className="flex flex-col bg-panel p-6 transition-colors duration-200 hover:bg-panel-hi">
+    <article className="flex flex-col bg-panel p-6 shadow-[inset_-2px_-2px_0_rgba(0,0,0,0.35),inset_2px_2px_0_rgba(255,255,255,0.08)] transition-colors duration-200 hover:bg-panel-hi">
       <div className="flex h-32 items-center justify-center max-sm:h-24">
         {sprite && (
           <img
@@ -117,7 +123,7 @@ export function HowToPlay({ sprites }: { sprites: BakedSprites | null }) {
           >
             {group.title}
           </p>
-          <div className="grid gap-px overflow-hidden rounded-[10px] border border-rim bg-rim sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-px overflow-hidden border-2 border-rim bg-rim sm:grid-cols-2 lg:grid-cols-3">
             {group.entries.map((entry) => (
               <EntityCard
                 key={entry.key}
@@ -129,7 +135,7 @@ export function HowToPlay({ sprites }: { sprites: BakedSprites | null }) {
         </div>
       ))}
 
-      <div className="mt-10 flex flex-wrap items-baseline gap-x-6 gap-y-2 rounded-[10px] border-2 border-gold bg-[color-mix(in_srgb,var(--color-gold)_7%,var(--color-panel))] px-8 py-6">
+      <div className="mt-10 flex flex-wrap items-baseline gap-x-6 gap-y-2 border-2 border-gold bg-[color-mix(in_srgb,var(--color-gold)_7%,var(--color-panel))] px-8 py-6">
         <p className="font-mono text-[1.0625rem] font-bold text-cream">
           <b className="text-gold">SCORE</b> = {SURVIVAL_POINTS_PER_SEC} ×
           seconds survived + {CANDY_VALUE.replace('+', '')} per ingredient

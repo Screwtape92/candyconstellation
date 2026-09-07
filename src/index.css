@@ -1,25 +1,30 @@
 @import 'tailwindcss';
 
-/* Design tokens for the site chrome, taken from the bottle label rather than
-   the game HUD — the label is the brand (docs/asset-spec.md "Art source").
-   Registering them here is what turns them into Tailwind utilities:
-   `bg-night`, `text-taffy`, `font-display`, and so on. */
+/* Design tokens for the site chrome. Retro-computer pass (2026-09-07,
+   Amiga/C64-boxed direction, approved via a mockup at
+   https://claude.ai/code/artifact/efd948a1-ea8e-4ad9-9d12-6fd388127e85) —
+   supersedes the earlier candy-label palette. Hues are the same ones
+   verified in that mockup, themselves grounded in the Pepto Commodore 64
+   reference palette rather than an invented "retro-ish" guess; token *names*
+   are kept stable from the previous palette (bubblegum/taffy/gold/etc.) so
+   every component's existing `bg-night`, `text-gold` etc. classes re-theme
+   automatically without touching each call site. */
 @theme {
-  --color-night: #1c1745;
-  --color-night-deep: #12102b;
-  --color-panel: #262057;
-  --color-panel-hi: #2f2868;
-  --color-rim: #3d3583;
-  --color-bubblegum: #ef6fae;
-  --color-taffy: #f9b9d8;
-  --color-sky-candy: #a5d5f2;
-  --color-gold: #f0c46a;
-  --color-cream: #fdf4e8;
-  --color-dim: #a79dd0;
+  --color-night-deep: #1c1030;
+  --color-night: #241a3d;
+  --color-panel: #2a1a48;
+  --color-panel-hi: #35225c;
+  --color-rim: #5b3aa0;
+  --color-bubblegum: #e0567a;
+  --color-taffy: #f0a8bc;
+  --color-sky-candy: #6f8fd6;
+  --color-gold: #c3d67a;
+  --color-cream: #ede4c8;
+  --color-dim: #a99bc9;
 
-  --font-display: 'Baloo 2', 'Karla', cursive;
+  --font-display: 'DotGothic16', sans-serif;
   --font-body: 'Karla', 'Segoe UI', system-ui, sans-serif;
-  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  --font-mono: 'Silkscreen', monospace;
 }
 
 body {
@@ -76,19 +81,29 @@ body {
   animation: cue-bob 2.2s ease-in-out infinite;
 }
 
+/* Typed boot-log lines in IntroSplash — a real precedent (Poolsuite.net's
+   own boot-up device, see IntroSplash.tsx), not an invented flourish. */
+@keyframes boot-type {
+  to {
+    width: 34ch;
+  }
+}
+
 /* Scroll-reveal: sections start here, JS (useReveal) flips them to
    .reveal-in once they've scrolled into view. Progressive enhancement —
-   see useReveal.ts for why content stays visible with JS disabled. */
+   see useReveal.ts for why content stays visible with JS disabled.
+   Window-open materialise (scale + rise), not a plain fade-up — the
+   retro-computer direction's own device, matching the approved mockup. */
 .reveal {
   opacity: 0;
-  transform: translateY(18px);
+  transform: scale(0.96) translateY(14px);
   transition:
-    opacity 0.6s ease-out,
-    transform 0.6s ease-out;
+    opacity 0.5s ease-out,
+    transform 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.2);
 }
 .reveal-in {
   opacity: 1;
-  transform: translateY(0);
+  transform: scale(1) translateY(0);
 }
 
 @media (prefers-reduced-motion: reduce) {

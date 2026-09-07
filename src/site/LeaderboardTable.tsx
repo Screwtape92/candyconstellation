@@ -51,7 +51,7 @@ export function LeaderboardTable({
           Couldn&rsquo;t refresh — showing the last results.
         </p>
       )}
-      <div className="overflow-x-auto rounded-[10px] border border-rim">
+      <div className="overflow-x-auto border-2 border-rim">
         <table className="w-full min-w-[480px] border-collapse">
           {caption && (
             <caption className="border-b border-rim bg-panel-hi px-6 py-3 text-left font-mono text-[0.6875rem] tracking-[0.16em] text-dim">

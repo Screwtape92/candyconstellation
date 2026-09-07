@@ -58,12 +58,12 @@ export function PostGame({ run, onSubmitted }: PostGameProps) {
         maxLength={MAX_NAME_LENGTH}
         placeholder="Enter your name"
         autoFocus
-        className="w-72 rounded-lg border border-rim bg-panel px-4 py-2 text-center text-lg text-cream outline-none focus:border-taffy"
+        className="w-72 border-2 border-rim bg-panel px-4 py-2 text-center text-lg text-cream shadow-[inset_1px_1px_0_rgba(0,0,0,0.35),inset_-1px_-1px_0_rgba(255,255,255,0.1)] outline-none focus:border-taffy"
       />
       <button
         type="submit"
         disabled={name.trim().length === 0}
-        className="rounded-full bg-bubblegum px-8 py-3 font-display text-xl font-extrabold text-night-deep transition-transform duration-100 hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0"
+        className="border-2 border-rim bg-bubblegum px-8 py-3 font-display text-xl font-extrabold text-night-deep shadow-[inset_-2px_-2px_0_rgba(0,0,0,0.35),inset_2px_2px_0_rgba(255,255,255,0.18)] transition-transform duration-100 hover:-translate-y-0.5 active:translate-y-0 active:shadow-[inset_2px_2px_0_rgba(0,0,0,0.35),inset_-2px_-2px_0_rgba(255,255,255,0.18)] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0"
       >
         Submit
       </button>

@@ -1,4 +1,4 @@
-import { Eyebrow, Roundel } from './ui'
+import { Eyebrow, Roundel, WindowFrame } from './ui'
 
 // Act one: the beer. It opens the page because the beer is the occasion — the
 // game is how you get to it, not the other way round.
@@ -65,20 +65,19 @@ export function AleHero() {
           </a>
         </div>
 
-        <figure className="relative m-0 max-w-[460px] overflow-hidden rounded-[18px] shadow-[0_0_0_1px_var(--color-rim),0_30px_90px_-30px_color-mix(in_srgb,var(--color-bubblegum)_70%,transparent)] max-lg:order-first max-lg:mx-auto lg:max-w-none">
-          <img
-            src="/assets/site/bottle-960.webp"
-            srcSet="/assets/site/bottle-480.webp 480w, /assets/site/bottle-960.webp 960w"
-            sizes="(max-width: 1023px) 460px, 46vw"
-            width={960}
-            height={960}
-            alt="A bottle of Candy Constellation Space Exploration Ale, surrounded by lollipops, gummy bears, astronauts and pastel planets."
-            className="block w-full"
-          />
-          {/* The render is a square with its own hard edge; a faint inward
-              vignette stops it reading as a screenshot pasted onto the page. */}
-          <div className="pointer-events-none absolute inset-0 shadow-[inset_0_0_70px_10px_color-mix(in_srgb,var(--color-night)_55%,transparent)]" />
-        </figure>
+        <div className="max-w-[460px] max-lg:order-first max-lg:mx-auto lg:max-w-none">
+          <WindowFrame title="bottle.iff — 96 colours">
+            <img
+              src="/assets/site/bottle-960.webp"
+              srcSet="/assets/site/bottle-480.webp 480w, /assets/site/bottle-960.webp 960w"
+              sizes="(max-width: 1023px) 460px, 46vw"
+              width={960}
+              height={960}
+              alt="A bottle of Candy Constellation Space Exploration Ale, surrounded by lollipops, gummy bears, astronauts and pastel planets."
+              className="block w-full"
+            />
+          </WindowFrame>
+        </div>
       </div>
     </section>
   )

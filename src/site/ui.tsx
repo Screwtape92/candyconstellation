@@ -48,14 +48,17 @@ export function Roundel({ value, unit }: { value: string; unit: string }) {
   )
 }
 
+// Beveled, sharp-cornered "OS button" rather than a soft pill — raised by
+// default (inset highlight top-left, shadow bottom-right), inverting to look
+// pressed on :active. The retro-computer direction's own device
+// (docs/asset-spec.md-style rationale: real window-chrome buttons are
+// bevels, not drop shadows) replacing the earlier rounded/glow treatment.
 const BUTTON_BASE =
-  'inline-block cursor-pointer rounded-full font-display font-extrabold tracking-[0.02em] transition-transform duration-100 hover:-translate-y-0.5'
+  'inline-block cursor-pointer border-2 border-rim font-display font-extrabold tracking-[0.02em] transition-transform duration-100 hover:-translate-y-0.5 active:translate-y-0 shadow-[inset_-2px_-2px_0_rgba(0,0,0,0.35),inset_2px_2px_0_rgba(255,255,255,0.18)] active:shadow-[inset_2px_2px_0_rgba(0,0,0,0.35),inset_-2px_-2px_0_rgba(255,255,255,0.18)]'
 
 const BUTTON_VARIANT = {
-  solid:
-    'bg-bubblegum px-10 py-3 text-lg text-night-deep hover:shadow-[0_12px_32px_-10px_var(--color-bubblegum)]',
-  ghost:
-    'border-2 border-rim px-8 py-3 text-base text-cream hover:border-taffy',
+  solid: 'bg-bubblegum px-10 py-3 text-lg text-night-deep',
+  ghost: 'bg-panel px-8 py-3 text-base text-cream hover:border-taffy',
 } as const
 
 export function PlayButton({
@@ -75,6 +78,36 @@ export function PlayButton({
     >
       {children}
     </button>
+  )
+}
+
+/**
+ * Vintage-OS window chrome around a piece of art — a striped title bar with
+ * two decorative corner controls and a filename-style label, in place of the
+ * soft drop-shadowed rounded figure the candy-label direction used. Grounded
+ * in the Amiga Workbench window convention (striped bar, inset controls),
+ * per the approved mockup at
+ * https://claude.ai/code/artifact/efd948a1-ea8e-4ad9-9d12-6fd388127e85 —
+ * not an invented "retro-ish" shape.
+ */
+export function WindowFrame({
+  title,
+  children,
+}: {
+  title: string
+  children: ReactNode
+}) {
+  return (
+    <figure className="relative m-0 overflow-hidden border-2 border-rim bg-panel pt-[26px]">
+      <div className="absolute inset-x-0 top-0 flex h-[26px] items-center gap-2 px-2 [background:repeating-linear-gradient(90deg,var(--color-bubblegum)_0_3px,var(--color-sky-candy)_3px_6px)]">
+        <span className="h-3 w-3 shrink-0 bg-cream" aria-hidden="true" />
+        <span className="flex-1 truncate bg-cream px-2 py-0.5 font-mono text-[0.625rem] text-night-deep">
+          {title}
+        </span>
+        <span className="h-3 w-3 shrink-0 bg-cream" aria-hidden="true" />
+      </div>
+      {children}
+    </figure>
   )
 }
 
