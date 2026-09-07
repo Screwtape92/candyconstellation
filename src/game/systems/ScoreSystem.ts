@@ -5,7 +5,7 @@ import Phaser from 'phaser'
 // survival term of the scoring formula (docs/game-design.md "Scoring"). Kept
 // low so survival is a modest baseline and candy pickups (value in
 // spawnTable.ts) are the dominant, risk-driven score lever.
-const SURVIVAL_POINTS_PER_SEC = 2
+export const SURVIVAL_POINTS_PER_SEC = 2
 
 // Generic score tracker for the formula in docs/game-design.md "Scoring":
 // score = survivalPointsPerSec * elapsedSec + Σ(candyValue). The survival term

@@ -1,1 +1,71 @@
 @import 'tailwindcss';
+
+/* Design tokens for the site chrome, taken from the bottle label rather than
+   the game HUD — the label is the brand (docs/asset-spec.md "Art source").
+   Registering them here is what turns them into Tailwind utilities:
+   `bg-night`, `text-taffy`, `font-display`, and so on. */
+@theme {
+  --color-night: #1c1745;
+  --color-night-deep: #12102b;
+  --color-panel: #262057;
+  --color-panel-hi: #2f2868;
+  --color-rim: #3d3583;
+  --color-bubblegum: #ef6fae;
+  --color-taffy: #f9b9d8;
+  --color-sky-candy: #a5d5f2;
+  --color-gold: #f0c46a;
+  --color-cream: #fdf4e8;
+  --color-dim: #a79dd0;
+
+  --font-display: 'Baloo 2', 'Karla', cursive;
+  --font-body: 'Karla', 'Segoe UI', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+body {
+  background-color: var(--color-night-deep);
+  color: var(--color-cream);
+  font-family: var(--font-body);
+  line-height: 1.68;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* The label's own furniture, reused as page structure. Each of these is a
+   shape Tailwind utilities can't express directly, so they live here rather
+   than as a pile of arbitrary-value classes repeated at every call site. */
+
+/* The pink banner, notched at both ends, from under the label wordmark. */
+.ribbon {
+  clip-path: polygon(
+    0 0,
+    100% 0,
+    calc(100% - 0.7rem) 50%,
+    100% 100%,
+    0 100%,
+    0.7rem 50%
+  );
+}
+
+/* The circular ABV/IBU badge, carrying game stats elsewhere on the page. */
+.roundel {
+  border: 2px solid currentColor;
+  border-radius: 50%;
+  line-height: 1.05;
+}
+
+/* A section rule that runs from the label out to the edge of the column. */
+.rule-out::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--color-rim);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}

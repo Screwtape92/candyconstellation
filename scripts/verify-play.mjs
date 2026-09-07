@@ -1,3 +1,13 @@
+// CAVEAT — software rendering (SwiftShader) can show rotated sprites as clipped
+// wedges/crescents that DO NOT reproduce on real GPU hardware. Verified
+// 2026-09-07: identical rotated gummy-meteor sprites rendered as clean, whole
+// shapes in a headed browser using real GPU (ANGLE/D3D11), at every angle
+// tested, while the same scene under `--use-angle=swiftshader` clipped some
+// angles unpredictably (non-monotonic with texture-frame padding size — not a
+// real deficiency in src/game/textures.ts's frame padding). If a screenshot
+// from this script shows a "bite" out of a rotating obstacle, re-check with
+// `chromium.launch({ headless: false })` (real GPU) before treating it as a
+// product bug.
 import { chromium } from 'playwright'
 import path from 'path'
 
@@ -24,7 +34,7 @@ page.on('requestfailed', (r) =>
 )
 
 await page.goto(URL, { waitUntil: 'networkidle' })
-await page.getByRole('button', { name: 'Play' }).click()
+await page.getByRole('button', { name: 'Play', exact: true }).first().click()
 await page.waitForSelector('canvas', { timeout: 10000 })
 
 const probe = async (label) => {

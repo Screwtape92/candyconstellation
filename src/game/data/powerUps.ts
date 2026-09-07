@@ -16,8 +16,10 @@ export interface PowerUpDef {
 // amount are placeholder balance values. Magnet duration is a short bonus
 // window; heart restores one health unit (MAX_HEALTH is 3), a meaningful but
 // not full heal.
-const CANDY_MAGNET_DURATION_MS = 6000
-const CANDY_HEART_RESTORE = 1
+// Exported so the site's how-to-play section states the real numbers rather
+// than a hand-copied duplicate that silently rots when these are retuned.
+export const CANDY_MAGNET_DURATION_MS = 6000
+export const CANDY_HEART_RESTORE = 1
 
 // The two MVP power-up rows (names approved 2026-07-15 — see docs/game-design.md
 // "MVP content"). They cover the two distinct effect shapes the generic

@@ -4,12 +4,12 @@ import type { Obstacle } from '../entities/Obstacle'
 
 // TUNABLE — playtest, not final (see docs/game-design.md "Tunables appendix",
 // "max health"). Placeholder starting/maximum health.
-const MAX_HEALTH = 3
+export const MAX_HEALTH = 3
 
 // TUNABLE — playtest, not final (see docs/game-design.md "Tunables appendix",
 // "invulnerability window"). Post-hit grace period during which further hits
 // deal no damage and don't re-trigger the timer.
-const INVULN_MS = 1000
+export const INVULN_MS = 1000
 
 // Generic, data-driven health tracker (see docs/game-design.md "Health,
 // power-up, and spawn systems"). Event-driven: listens for `playerHit` and

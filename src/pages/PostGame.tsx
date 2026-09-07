@@ -45,9 +45,11 @@ export function PostGame({ run, onSubmitted }: PostGameProps) {
   return (
     <form
       onSubmit={handleSubmit}
-      className="flex flex-col items-center gap-6 text-center text-white"
+      className="flex flex-col items-center gap-6 text-center"
     >
-      <h1 className="text-4xl font-bold text-red-400">Game Over</h1>
+      <h1 className="font-display text-4xl font-extrabold text-bubblegum">
+        Game Over
+      </h1>
       <p className="text-2xl">Final Score: {run.score}</p>
       <input
         type="text"
@@ -56,12 +58,12 @@ export function PostGame({ run, onSubmitted }: PostGameProps) {
         maxLength={MAX_NAME_LENGTH}
         placeholder="Enter your name"
         autoFocus
-        className="w-72 rounded-lg bg-slate-800 px-4 py-2 text-center text-lg outline-none ring-1 ring-slate-600 focus:ring-indigo-500"
+        className="w-72 rounded-lg border border-rim bg-panel px-4 py-2 text-center text-lg text-cream outline-none focus:border-taffy"
       />
       <button
         type="submit"
         disabled={name.trim().length === 0}
-        className="rounded-lg bg-indigo-600 px-8 py-3 text-xl font-semibold hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-40"
+        className="rounded-full bg-bubblegum px-8 py-3 font-display text-xl font-extrabold text-night-deep transition-transform duration-100 hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0"
       >
         Submit
       </button>

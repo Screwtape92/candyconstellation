@@ -16,6 +16,12 @@ import { PostGame } from './pages/PostGame'
 // would be unwarranted (docs/architecture.md "React ⇄ Phaser integration").
 type View = 'landing' | 'playing' | 'postgame' | 'leaderboard'
 
+// Landing scrolls a full page (the ale, the game, how to play, the board); the
+// other three are single-screen and want their content centered instead. One
+// shell, two layout modes, rather than every screen re-deciding its own outer
+// container.
+const SCROLLING_VIEWS: View[] = ['landing', 'leaderboard']
+
 function App() {
   const [view, setView] = useState<View>('landing')
   const [lastRun, setLastRun] = useState<GameOverPayload | null>(null)
@@ -48,14 +54,15 @@ function App() {
     }
   }, [])
 
+  const scrolling = SCROLLING_VIEWS.includes(view)
+
   return (
-    <div className="flex h-screen items-center justify-center overflow-hidden bg-slate-950">
-      {view === 'landing' && (
-        <Landing
-          onPlay={() => setView('playing')}
-          onViewLeaderboard={() => setView('leaderboard')}
-        />
-      )}
+    <div
+      className={`h-screen w-full bg-night-deep text-cream ${
+        scrolling ? '' : 'flex items-center justify-center overflow-hidden'
+      }`}
+    >
+      {view === 'landing' && <Landing onPlay={() => setView('playing')} />}
       {/* PhaserGame is mounted only while playing, so navigating away genuinely
           unmounts and destroys the Phaser.Game instance. */}
       {view === 'playing' && <PhaserGame />}
