@@ -12,7 +12,8 @@
     "typecheck": "tsc -b --noEmit",
     "preview": "vite preview",
     "verify:play": "node scripts/verify-play.mjs",
-    "verify:textures": "node scripts/dump-textures.mjs"
+    "verify:textures": "node scripts/dump-textures.mjs",
+    "optimize:images": "node scripts/optimize-images.mjs"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",
