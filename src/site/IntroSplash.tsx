@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 
+import { PlayButton } from './ui'
+
 // Timings for the reveal: a typed boot log, then the bottle grows in, then
 // the wordmark settles over it. The boot beat is the retro-computer
 // direction's own device — Poolsuite.net is the real, working precedent for
@@ -119,7 +121,9 @@ export function IntroSplash({ onDone }: { onDone: () => void }) {
 
       <div
         className={`relative mt-2 flex flex-col items-center text-center transition-all duration-700 ease-out ${
-          titled ? 'translate-y-0 opacity-100' : 'translate-y-3 opacity-0'
+          titled
+            ? 'translate-y-0 opacity-100'
+            : 'pointer-events-none translate-y-3 opacity-0'
         }`}
       >
         <h1 className="font-display text-[clamp(2rem,7vw,3.75rem)] leading-[0.95] font-extrabold text-taffy">
@@ -128,6 +132,16 @@ export function IntroSplash({ onDone }: { onDone: () => void }) {
         <span className="ribbon mt-4 inline-block bg-bubblegum px-5 py-1.5 font-body text-xs font-bold tracking-[0.28em] text-night uppercase">
           Space Exploration
         </span>
+
+        {/* An explicit CTA, not just the whole-screen click — now that
+            dismissal is required (see the note above), "click somewhere on
+            this overlay" needed a real button to point at. Stops its click
+            from also bubbling to the overlay's own onClick below, which
+            would otherwise fire handleDismiss twice for one tap (harmless,
+            but there's no reason to rely on that). */}
+        <div className="mt-8" onClick={(e) => e.stopPropagation()}>
+          <PlayButton onClick={handleDismiss}>Let&rsquo;s go!</PlayButton>
+        </div>
       </div>
 
       <span className="absolute bottom-6 right-6 font-mono text-xs tracking-[0.12em] text-dim">
