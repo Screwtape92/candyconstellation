@@ -40,6 +40,10 @@ const browser = await chromium.launch({
 })
 const page = await browser.newPage({ viewport: { width: 1200, height: 800 } })
 await page.goto(URL, { waitUntil: 'networkidle' })
+// IntroSplash no longer auto-dismisses (2026-09-08) — see verify-play.mjs's
+// matching comment for why this extra step + wait is needed now.
+await page.getByRole('button', { name: 'Enter site' }).click()
+await page.waitForTimeout(900)
 await page.getByRole('button', { name: 'Play', exact: true }).first().click()
 await page.waitForSelector('canvas')
 await page.waitForTimeout(1500)

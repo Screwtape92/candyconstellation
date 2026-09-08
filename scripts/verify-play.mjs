@@ -34,6 +34,13 @@ page.on('requestfailed', (r) =>
 )
 
 await page.goto(URL, { waitUntil: 'networkidle' })
+// IntroSplash no longer auto-dismisses (2026-09-08 — dismissal now requires
+// a real click/keypress, so background music reliably gets a user gesture).
+// Dismiss it explicitly, then wait out its fade before clicking Play, since
+// the splash stays in the DOM (at opacity-0) intercepting clicks until its
+// FADE_MS timeout actually unmounts it.
+await page.getByRole('button', { name: 'Enter site' }).click()
+await page.waitForTimeout(900)
 await page.getByRole('button', { name: 'Play', exact: true }).first().click()
 await page.waitForSelector('canvas', { timeout: 10000 })
 

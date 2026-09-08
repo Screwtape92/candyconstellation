@@ -1,16 +1,21 @@
 import { useEffect, useState } from 'react'
 
-// Timings for the four-beat sequence: a typed boot log, then the bottle
-// grows in, the wordmark settles over it, then the whole thing fades to
-// reveal the real page underneath (which is already mounted the whole time —
-// this is an overlay, not a separate route, so there's nothing to load once
-// it clears). The boot beat is the retro-computer direction's own device —
-// Poolsuite.net is the real, working precedent for "one typed boot-up
-// moment, then everything settles and stays calm" (see the mockup at
-// https://claude.ai/code/artifact/efd948a1-ea8e-4ad9-9d12-6fd388127e85).
+// Timings for the reveal: a typed boot log, then the bottle grows in, then
+// the wordmark settles over it. The boot beat is the retro-computer
+// direction's own device — Poolsuite.net is the real, working precedent for
+// "one typed boot-up moment, then everything settles and stays calm" (see
+// the mockup at https://claude.ai/code/artifact/efd948a1-ea8e-4ad9-9d12-6fd388127e85).
+//
+// Dismissal requires a real click/keypress — changed 2026-09-08. It used to
+// auto-advance to the real page after TITLE_MS with nothing required; now it
+// sits at "title" indefinitely once fully revealed, the way an old
+// computer's boot screen waits at a "press any key" prompt. This exists
+// specifically so background music (BackgroundMusic.tsx) reliably gets the
+// user gesture every browser's autoplay policy requires before it can play
+// — every visitor's first gesture now lands here, within the first few
+// seconds, rather than "whenever they happen to click something else."
 const BOOT_MS = 2400
 const GROW_MS = 1200
-const TITLE_MS = 1500
 const FADE_MS = 800
 
 type Phase = 'boot' | 'grow' | 'title' | 'out'
@@ -28,25 +33,18 @@ export function IntroSplash({ onDone }: { onDone: () => void }) {
   useEffect(() => {
     // A forced multi-second animated intro is exactly what
     // prefers-reduced-motion asks to skip — straight to the real page.
+    // Deliberately still bypasses the click requirement below too: forcing
+    // an interaction with an animation this visitor explicitly opted out of
+    // would be worse than occasionally missing the early-music guarantee.
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       onDone()
       return
     }
     const toGrow = setTimeout(() => setPhase('grow'), BOOT_MS)
     const toTitle = setTimeout(() => setPhase('title'), BOOT_MS + GROW_MS)
-    const toOut = setTimeout(
-      () => setPhase('out'),
-      BOOT_MS + GROW_MS + TITLE_MS,
-    )
-    const finish = setTimeout(
-      onDone,
-      BOOT_MS + GROW_MS + TITLE_MS + FADE_MS,
-    )
     return () => {
       clearTimeout(toGrow)
       clearTimeout(toTitle)
-      clearTimeout(toOut)
-      clearTimeout(finish)
     }
   }, [onDone])
 
@@ -54,19 +52,30 @@ export function IntroSplash({ onDone }: { onDone: () => void }) {
   const grown = phase === 'grow' || phase === 'title' || phase === 'out'
   const titled = phase === 'title' || phase === 'out'
 
+  // The only path to 'out': a real click/keypress, never a timer — see the
+  // dismissal note above. Guarded against firing twice (e.g. a stray keydown
+  // during the fade) since that would schedule two onDone calls.
+  const handleDismiss = () => {
+    if (phase === 'out') {
+      return
+    }
+    setPhase('out')
+    setTimeout(onDone, FADE_MS)
+  }
+
   return (
-    // Click, Enter or Escape all skip straight to the site — a one-time
-    // flourish should never trap anyone who's already seen it.
+    // Click, Enter, Space or Escape all dismiss — early (skipping the
+    // animation) or once it's fully revealed (the only way past it now).
     <div
       role="button"
       tabIndex={0}
-      onClick={onDone}
+      onClick={handleDismiss}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ' || e.key === 'Escape') {
-          onDone()
+          handleDismiss()
         }
       }}
-      aria-label="Skip intro"
+      aria-label="Enter site"
       className={`fixed inset-0 z-50 flex cursor-pointer flex-col items-center justify-center overflow-hidden bg-night-deep transition-opacity duration-700 ${
         phase === 'out' ? 'opacity-0' : 'opacity-100'
       }`}
@@ -122,7 +131,7 @@ export function IntroSplash({ onDone }: { onDone: () => void }) {
       </div>
 
       <span className="absolute bottom-6 right-6 font-mono text-xs tracking-[0.12em] text-dim">
-        SKIP →
+        CLICK TO ENTER →
       </span>
     </div>
   )
