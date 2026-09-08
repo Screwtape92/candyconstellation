@@ -233,7 +233,7 @@ directly, not just trusting React's documented escaping behavior.
 - [x] Power-up sprites (Candy Magnet, Candy Heart)
 - [x] Collectible sprites (Hop Nebula Dust, Malt Meteorite, Candy Star)
 - [x] Player + parallax starfield background
-- [ ] Audio (Kenney.nl CC0 packs — background loop + 5 SFX cues)
+- [x] Audio (Kenney.nl CC0 packs — background loop + 7 SFX cues)
 
 **Sprites done 2026-09-07 — but not as specced.** The art source changed from
 bespoke PixelLab pixel art to two Kenney CC0 packs the user supplied
@@ -253,8 +253,13 @@ harnesses written along the way are kept as dev tools: `npm run verify:play`
 (drives a real run, reports live entity/texture state, screenshots) and
 `npm run verify:textures` (renders every baked texture at 6x for eyeballing).
 
-**Audio is the one item still open** — neither supplied pack contains any
-sound, so the audio spec in `game-design.md` is entirely unmet.
+**Audio done 2026-09-08.** User supplied four Kenney CC0 audio packs
+(`kenney_interface-sounds`, `kenney_sci-fi-sounds`, `kenney_music-jingles`,
+`kenney_impact-sounds`, under `audio/` at the repo root — the last one
+unused for now, kept for future SFX variety). Same data-driven shape as
+every other system: `data/audioCues.ts` + `systems/AudioSystem.ts`, one
+listener per cue off events the game already emits. See `game-design.md`'s
+"Audio spec" for the real cue list and the mute-button/localStorage details.
 
 Content naming is already resolved (2026-07-15) — real sprites can be
 sourced/named against the actual entities from day one of this phase, no
@@ -262,8 +267,8 @@ longer a blocker.
 - **Owner**: `sprite-integrator` (in practice: done directly in the main
   session, given the four-day runway).
 - **Exit condition**: every MVP entity has a validated sprite/animation set
-  wired in; visual readability holds per the Feel & experience section.
-  Sprites meet this; audio does not.
+  wired in; visual readability holds per the Feel & experience section. Met —
+  sprites, background art, and audio are all in.
 
 ## Phase 8 — Launch readiness
 

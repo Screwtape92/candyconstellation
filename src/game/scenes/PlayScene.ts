@@ -7,6 +7,7 @@ import { Player } from '../entities/Player'
 import { PowerUp } from '../entities/PowerUp'
 import type { Projectile } from '../entities/Projectile'
 import { eventBus, HUD_UPDATE_EVENT } from '../eventBus'
+import { AudioSystem } from '../systems/AudioSystem'
 import { BlasterSystem, PROJECTILE_DAMAGE } from '../systems/BlasterSystem'
 import { HealthSystem, MAX_HEALTH } from '../systems/HealthSystem'
 import { JuiceSystem } from '../systems/JuiceSystem'
@@ -107,6 +108,9 @@ export class PlayScene extends Phaser.Scene {
       if (pickup.collect()) {
         this.powerUpSystem.apply(pickup.id)
         this.events.emit('pickupBurst', { x: pickup.x, y: pickup.y })
+        // Distinct from candyCollected (collectibles only) — AudioSystem
+        // listens for this to play the power-up-activate cue.
+        this.events.emit('powerUpApplied')
       }
     })
 
@@ -140,6 +144,11 @@ export class PlayScene extends Phaser.Scene {
     // burst) and pickupBurst (burst only) — see docs/game-design.md "Feel &
     // experience".
     new JuiceSystem(this)
+    // Same event-driven, no-field shape as JuiceSystem above — listens for
+    // playerDamaged/candyCollected/powerUpApplied/obstacleDestroyed/
+    // blasterFired/gameOver and owns the background music loop
+    // (docs/game-design.md "Audio spec").
+    new AudioSystem(this)
     // ScoreSystem listens for candyCollected (emitted above); its elapsedSec
     // reads Phaser's own Clock.startTime, so there's no separate start() call
     // needed to zero its clock (see ScoreSystem.elapsedSec).

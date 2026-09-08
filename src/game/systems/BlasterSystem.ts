@@ -81,6 +81,8 @@ export class BlasterSystem {
     // velocity must be reasserted after add — same fix as every other
     // entity's launch() (see docs/build-plan.md Phase 3 notes).
     projectile.setVelocityY(-PROJECTILE_SPEED)
+    // AudioSystem listens for this to play the fire cue.
+    this.scene.events.emit('blasterFired')
   }
 
   private showFireHintOnce() {
