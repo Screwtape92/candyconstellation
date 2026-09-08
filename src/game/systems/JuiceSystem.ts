@@ -43,7 +43,7 @@ const POPUP_RISE_PX = 40
 const POPUP_DURATION_MS = 600
 
 type BurstAt = { x: number; y: number }
-type CandyCollected = { value: number; x: number; y: number }
+type ScoredPickup = { value: number; x: number; y: number }
 
 // Owns all "juice" feedback (see docs/game-design.md "Feel & experience"):
 // hit-stop, screen shake, and particle bursts. Event-driven like every other
@@ -95,20 +95,33 @@ export class JuiceSystem {
     this.burst(at, PICKUP_BURST_TINT)
   }
 
-  // Sour Blaster killed an obstacle before it reached the player — no hit-stop
-  // or shake (this isn't a damage event), just a distinct-colored burst so it
-  // reads as its own outcome (docs/game-design.md "Obstacle durability").
-  private onObstacleDestroyed(at: BurstAt) {
-    this.burst(at, OBSTACLE_DESTROYED_TINT)
+  // An obstacle died before it reached the player — via Sour Blaster, or by
+  // ramming it with Sugar Shield up — no hit-stop or shake (this isn't a
+  // damage event), just a distinct-colored burst so it reads as its own
+  // outcome (docs/game-design.md "Obstacle durability"). Added 2026-09-08:
+  // also floats the same "+N" popup as a candy pickup, since destroying an
+  // obstacle now scores (see ScoreSystem) and that needs to be visible, not
+  // just felt via the burst.
+  private onObstacleDestroyed(payload: ScoredPickup) {
+    this.burst(payload, OBSTACLE_DESTROYED_TINT)
+    if (payload.value > 0) {
+      this.floatScorePopup(payload.x, payload.y, payload.value)
+    }
   }
 
   // Floating "+N" arcade score popup at the pickup point. Fires only for
   // collectibles (candyCollected carries a score value); power-up pickups use
-  // pickupBurst only and get no popup. Throwaway placeholder text, self-
-  // destructing after the tween so nothing accumulates.
-  private onCandyCollected(payload: CandyCollected) {
+  // pickupBurst only and get no popup.
+  private onCandyCollected(payload: ScoredPickup) {
+    this.floatScorePopup(payload.x, payload.y, payload.value)
+  }
+
+  // Shared by candy pickups and obstacle kills above — same "points are
+  // points" visual language for both. Throwaway placeholder text,
+  // self-destructing after the tween so nothing accumulates.
+  private floatScorePopup(x: number, y: number, value: number) {
     const popup = this.scene.add
-      .text(payload.x, payload.y, `+${payload.value}`, {
+      .text(x, y, `+${value}`, {
         fontFamily: 'monospace',
         fontSize: '20px',
         color: POPUP_TINT,
@@ -117,7 +130,7 @@ export class JuiceSystem {
       .setDepth(101)
     this.scene.tweens.add({
       targets: popup,
-      y: payload.y - POPUP_RISE_PX,
+      y: y - POPUP_RISE_PX,
       alpha: 0,
       duration: POPUP_DURATION_MS,
       ease: 'Cubic.easeOut',

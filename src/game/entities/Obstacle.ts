@@ -22,6 +22,9 @@ const PLAYER_HIT_TINT = 0xff5555
 // concern, not a Phase 3 blocker. Never orphaned: every path ends in destroy().
 export class Obstacle extends Phaser.Physics.Arcade.Sprite {
   readonly damage: number
+  // Score awarded for destroying this obstacle instead of letting it pass
+  // (docs/game-design.md "Scoring"). Has no bearing on player collisions.
+  readonly killValue: number
 
   private readonly fallSpeed: number
   private readonly spinDegPerSec: number
@@ -49,6 +52,7 @@ export class Obstacle extends Phaser.Physics.Arcade.Sprite {
     scene.physics.add.existing(this)
 
     this.damage = entry.damage ?? 0
+    this.killValue = entry.killValue ?? 0
     this.remainingHitPoints = entry.hitPoints ?? 1
     this.fallSpeed = baseSpeed * (entry.speedMultiplier ?? 1)
     this.spinDegPerSec = spinFor(entry.spriteKey)
@@ -122,17 +126,37 @@ export class Obstacle extends Phaser.Physics.Arcade.Sprite {
       return false
     }
 
+    this.destroyAsKill()
+    return true
+  }
+
+  // Destroys the obstacle outright, ignoring remaining hit points — used
+  // when Sugar Shield blocks a collision (docs/game-design.md "Power-ups"):
+  // ramming an obstacle with the shield up destroys it in one hit
+  // regardless of its Sour Blaster durability, since that stat is about
+  // "how many shots to destroy", not melee toughness. Returns true if this
+  // destroys the obstacle, same contract as takeProjectileHit, so the caller
+  // can gate a single obstacleDestroyed emit.
+  destroyOutright(): boolean {
+    if (this.isHit) {
+      return false
+    }
+    this.destroyAsKill()
+    return true
+  }
+
+  // Shared by both kill paths above: disable the body immediately (same
+  // pattern as Collectible/PowerUp's collect()), unlike flashAndDestroy —
+  // a destroyed obstacle must not also register a player collision during
+  // its death flash (docs/game-design.md "Obstacle durability" —
+  // destruction and player-collision are mutually exclusive outcomes for a
+  // given obstacle).
+  private destroyAsKill() {
     this.isHit = true
-    // Disable the body immediately (same pattern as Collectible/PowerUp's
-    // collect()), unlike flashAndDestroy above: a destroyed obstacle must not
-    // also register a player collision during its death flash (docs/game-
-    // design.md "Obstacle durability" — destruction and player-collision are
-    // mutually exclusive outcomes for a given obstacle).
     this.disableBody(false, false)
     this.setTint(PROJECTILE_KILL_TINT)
     this.scene.time.delayedCall(HIT_FLASH_MS, () => {
       this.destroy()
     })
-    return true
   }
 }

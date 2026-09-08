@@ -68,6 +68,22 @@ export class PlayScene extends Phaser.Scene {
       this.obstacles,
       (_player, obstacle) => {
         const hit = obstacle as Obstacle
+        // Sugar Shield blocks all damage (HealthSystem's own check), but
+        // ramming an obstacle while shielded destroys it outright instead of
+        // just bouncing off — the same reward as a Sour Blaster kill
+        // (docs/game-design.md "Power-ups"). Checked here, not inside
+        // HealthSystem, since this is about what happens to the *obstacle*,
+        // not the player's health.
+        if (this.player.shieldActive) {
+          if (hit.destroyOutright()) {
+            this.events.emit('obstacleDestroyed', {
+              x: hit.x,
+              y: hit.y,
+              value: hit.killValue,
+            })
+          }
+          return
+        }
         // HealthSystem listens for this event to apply damage/invulnerability;
         // it also still drives the temporary hit flash for now.
         this.events.emit('playerHit', hit)
@@ -128,7 +144,11 @@ export class PlayScene extends Phaser.Scene {
         }
         shot.destroy()
         if (hit.takeProjectileHit(PROJECTILE_DAMAGE)) {
-          this.events.emit('obstacleDestroyed', { x: hit.x, y: hit.y })
+          this.events.emit('obstacleDestroyed', {
+            x: hit.x,
+            y: hit.y,
+            value: hit.killValue,
+          })
         }
       },
     )

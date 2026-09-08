@@ -12,6 +12,13 @@ export interface SpawnEntry {
   // effect on player collisions — those still deal `damage` regardless of
   // remaining hitPoints. Defaults to 1 if omitted.
   hitPoints?: number
+  // Obstacles only: score awarded for destroying this obstacle (via Sour
+  // Blaster, or ramming it while Sugar Shield is active) instead of letting
+  // it pass — see docs/game-design.md "Obstacle durability". Scaled by size/
+  // toughness, matching the hitPoints hierarchy: bigger, tougher obstacles
+  // are worth more. Has no effect on player collisions. Defaults to 0 if
+  // omitted (destroying it is free — no obstacle currently omits this).
+  killValue?: number
   value?: number // collectibles
   speedMultiplier?: number // optional per-entry override
   // Obstacles only: eligible during the opening onboarding window (see
@@ -27,7 +34,8 @@ export interface SpawnEntry {
 // see docs/game-design.md "MVP content").
 //
 // TUNABLE — playtest, not final (see docs/game-design.md "Tunables appendix").
-// Per-row weight/damage/value/speedMultiplier are placeholder balance values:
+// Per-row weight/damage/value/killValue/speedMultiplier are placeholder
+// balance values:
 //  - gummy-meteor is the common baseline.
 //  - jawbreaker is the slower, higher-damage heavy (speedMultiplier < 1).
 //  - sour-comet is the faster, rarer hazard (speedMultiplier > 1); its
@@ -68,6 +76,9 @@ export const spawnTable: SpawnEntry[] = [
     // so it's also the obstacle a player is most likely shooting at first.
     // One shot, one kill (docs/game-design.md "MVP content").
     hitPoints: 1,
+    // Lowest killValue to match: the common, easiest kill (docs/game-design.md
+    // "Scoring" — bigger/tougher obstacles are worth more).
+    killValue: 30,
     onboardingSafe: true,
   },
   {
@@ -82,6 +93,9 @@ export const spawnTable: SpawnEntry[] = [
     // famously the candy you can't get through, so the durability system
     // agreeing with the name is the point (docs/game-design.md "MVP content").
     hitPoints: 4,
+    // Highest killValue to match: the biggest, toughest obstacle is the
+    // biggest reward for actually landing enough shots on it.
+    killValue: 100,
   },
   {
     id: 'sour-comet',
@@ -96,6 +110,8 @@ export const spawnTable: SpawnEntry[] = [
     // that would double-charge the player for the same trait (docs/game-
     // design.md "MVP content").
     hitPoints: 2,
+    // Middling killValue to match its middling hitPoints.
+    killValue: 60,
   },
   {
     id: 'hop-nebula-dust',

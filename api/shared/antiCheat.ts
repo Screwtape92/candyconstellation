@@ -2,7 +2,9 @@
 // plausibility formula"):
 //
 //   maxPlausibleScore(elapsedSec) =
-//     (survivalPointsPerSec * elapsedSec + maxCandyRatePerSec(elapsedSec) * elapsedSec)
+//     (survivalPointsPerSec * elapsedSec
+//       + maxCandyRatePerSec(elapsedSec) * elapsedSec
+//       + maxKillRatePerSec() * elapsedSec)
 //     * toleranceMultiplier
 //   reject if score > maxPlausibleScore(elapsedSec) OR elapsedSec < minViableRunSec
 //
@@ -33,6 +35,19 @@ const COLLECTIBLE_VALUE = 50
 const SPAWN_BASE_MS = 800
 const SPAWN_RAMP_COEFF = 0.25
 
+// Added 2026-09-08: destroying an obstacle now scores (see docs/game-design.md
+// "Scoring"), which this bound didn't originally account for — a genuinely
+// skilled/lucky run using the gun a lot could otherwise exceed
+// maxPlausibleScore and get wrongly rejected.
+//
+// Mirrors FIRE_COOLDOWN_MS in src/game/systems/BlasterSystem.ts.
+const BLASTER_FIRE_COOLDOWN_MS = 250
+
+// Mirrors the highest `killValue` among the obstacle rows in
+// src/game/data/spawnTable.ts (jawbreaker — the toughest obstacle is also
+// the most rewarding to destroy).
+const MAX_OBSTACLE_KILL_VALUE = 100
+
 // TUNABLE — playtest, not final (docs/game-design.md "Tunables appendix",
 // "anti-cheat tolerance"). Slack above the theoretical max so a genuinely great
 // run near the bound isn't rejected for rounding/measurement noise.
@@ -60,6 +75,16 @@ function maxCandyRatePerSec(t: number): number {
   return (candyFraction * COLLECTIBLE_VALUE) / spawnIntervalSec(t)
 }
 
+// Same generous-upper-bound philosophy as maxCandyRatePerSec above, applied
+// to kill points: as if Sour Blaster were active for the *entire* run (a
+// real player gets it in occasional ~6s windows, not the whole run) and
+// every single shot landed on the single highest-value obstacle. Flat, not
+// time-varying — unlike candy this isn't gated by spawn cadence, it's gated
+// by fire rate, which doesn't change over a run.
+function maxKillRatePerSec(): number {
+  return MAX_OBSTACLE_KILL_VALUE / (BLASTER_FIRE_COOLDOWN_MS / 1000)
+}
+
 // Evaluating maxCandyRatePerSec at the run's final elapsedSec and multiplying by
 // elapsedSec treats the run's peak (final) candy rate as if it held for the whole
 // run. Since the rate only ever rises, that over-estimates total candy points —
@@ -68,7 +93,8 @@ function maxCandyRatePerSec(t: number): number {
 export function maxPlausibleScore(elapsedSec: number): number {
   return (
     (SURVIVAL_POINTS_PER_SEC * elapsedSec +
-      maxCandyRatePerSec(elapsedSec) * elapsedSec) *
+      maxCandyRatePerSec(elapsedSec) * elapsedSec +
+      maxKillRatePerSec() * elapsedSec) *
     TOLERANCE_MULTIPLIER
   )
 }

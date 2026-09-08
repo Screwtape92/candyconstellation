@@ -255,16 +255,30 @@ destroyed.
   are mutually exclusive outcomes for a given obstacle.
 - **Durability only matters against the blaster.** `hitPoints` has no effect
   on player collisions: touching an obstacle deals its `damage` regardless of
-  how much health it has left, and the obstacle doesn't need to be "killed"
-  by ramming it. The player never has a way to destroy an obstacle except
-  while Sour Blaster is active, so for the great majority of a run the field
-  is inert — which is correct, since dodging, not shooting, is the game.
-- **Destroyed obstacles award no score.** Scoring stays survival + candy (see
-  "Scoring" below). Adding a kill-points term would mean re-deriving the
-  anti-cheat plausibility bound around a new, blaster-uptime-dependent
-  ceiling, for a mechanic that's only live for a few seconds at a time. Not
-  worth it — and it keeps the blaster a survival tool rather than a farming
-  one. Revisit only if playtesting says the blaster feels unrewarding.
+  how much health it has left. Ramming one outright (see the Sugar Shield
+  bullet below) ignores `hitPoints` entirely — that stat is specifically
+  "how many shots to destroy", not melee toughness.
+- **Destroying an obstacle scores — reversed 2026-09-08.** Originally "no
+  score, keeps the blaster a survival tool rather than a farming one, and
+  avoids re-deriving the anti-cheat bound" — revisited per direct user
+  request. `SpawnEntry` gains an obstacle-only `killValue` field, scaled with
+  the same size/toughness hierarchy as `hitPoints`: `gummy-meteor` 30,
+  `sour-comet` 60, `jawbreaker` 100 (TUNABLE, see appendix). Awarded to
+  `ScoreSystem` and shown as a floating "+N" popup (`JuiceSystem`), the same
+  treatment as a candy pickup — destroying an obstacle needs to visibly pay
+  off, not just feel good. The anti-cheat bound **was** updated to match (see
+  "Anti-cheat plausibility formula" below) — shipping the score change
+  without it would have let a genuinely skilled/lucky run get wrongly
+  rejected as implausible, which is worse than not adding the feature.
+- **Sugar Shield also destroys on contact, not just the blaster.** Ramming an
+  obstacle while Sugar Shield is active now destroys it outright (ignoring
+  remaining `hitPoints`) instead of just bouncing off silently — the same
+  reward as a Sour Blaster kill: `killValue` points, the "+N" popup, the
+  `obstacle-destroyed` SFX cue. This also fixes a real gap: previously a
+  shielded collision produced no sound at all, since `HealthSystem` blocks
+  the hit before its damage-sound event ever fires. Checked in `PlayScene`'s
+  own overlap handler (`player.shieldActive`), not inside `HealthSystem` —
+  this is about what happens to the *obstacle*, not the player's health.
 
 **Spawn table** — generic weighted shape:
 ```ts
@@ -368,8 +382,15 @@ here so they aren't lost, and so nobody mistakes them for current content.
 ## Scoring
 
 ```
-score = survivalPointsPerSec * elapsedSec + Σ(candyValue for each pickup)   // constants TBD/tunable
+score = survivalPointsPerSec * elapsedSec
+      + Σ(candyValue for each pickup)
+      + Σ(killValue for each obstacle destroyed)   // constants TBD/tunable
 ```
+
+Added 2026-09-08: the kill term, for destroying an obstacle instead of
+letting it pass (Sour Blaster, or ramming one with Sugar Shield up) — see
+"Obstacle durability" above for the reversal this represents and the
+per-obstacle values.
 
 Optional combo/streak multiplier left unspecified — decide during playtesting
 if base scoring feels flat.
@@ -381,7 +402,9 @@ this runs):
 
 ```
 maxPlausibleScore(elapsedSec) =
-  ( survivalPointsPerSec * elapsedSec + maxCandyRatePerSec * elapsedSec )
+  ( survivalPointsPerSec * elapsedSec
+    + maxCandyRatePerSec * elapsedSec
+    + maxKillRatePerSec * elapsedSec )
   * toleranceMultiplier                                  // e.g. 1.15, TUNABLE
 
 reject submission if:
@@ -399,6 +422,17 @@ skilled player's real score on a long run isn't falsely rejected as
 implausible just because the check assumes a fixed ceiling that no longer
 exists. Exact constants are TBD — tune once the spawn table and scoring
 constants are finalized.
+
+**`maxKillRatePerSec` — added 2026-09-08** alongside the kill-scoring
+reversal above (`api/shared/antiCheat.ts`). Deliberately flat, not
+time-varying like the candy term: kill rate is gated by Sour Blaster's fire
+cooldown, which doesn't change over a run, not by spawn cadence. Generous by
+the same "real players can't approach this" standard as the candy bound — it
+assumes Sour Blaster is active for the *entire* run (a real player gets it in
+occasional ~6s windows) and every single shot lands on the single
+highest-value obstacle (`jawbreaker`). This also safely covers the Sugar
+Shield kill path: ramming obstacles can't destroy them faster than the
+blaster's fire-rate-bounded ceiling already assumes.
 
 ## Audio spec
 
@@ -648,6 +682,8 @@ All marked non-final — placeholder defaults only, to be set via playtesting:
 | projectile fire cooldown | 250 (ms) — TUNABLE, playtest, not final | minimum interval between shots while Sour Blaster is active, so holding `Space` gives a rhythm rather than a stream. At this placeholder a 6000ms window is ~24 shots — enough to matter, not enough to clear the screen |
 | projectile damage     | 1 (hit point) — TUNABLE, playtest, not final | subtracted from an obstacle's `hitPoints` per impact. At 1, the `hitPoints` values below read directly as "shots to destroy" |
 | obstacle hit points   | `gummy-meteor` 1, `sour-comet` 2, `jawbreaker` 4 — TUNABLE, playtest, not final | `hitPoints` on the obstacle rows in `spawnTable.ts`; shots-to-destroy at the placeholder projectile damage of 1. Rationale for the ordering is in "MVP content" above — the jawbreaker's gap over the others is intentional, not just an increment |
+| obstacle kill value   | `gummy-meteor` 30, `sour-comet` 60, `jawbreaker` 100 — TUNABLE, playtest, not final | `killValue` on the obstacle rows in `spawnTable.ts` (added 2026-09-08); score awarded for destroying rather than dodging. Scaled with the same size/toughness ordering as hit points above |
+| max kill rate (anti-cheat) | 400 (points/sec) — TUNABLE, placeholder, not final | `maxKillRatePerSec()` in `api/shared/antiCheat.ts` = `MAX_OBSTACLE_KILL_VALUE / (BLASTER_FIRE_COOLDOWN_MS / 1000)` = 100 / 0.25; a deliberately generous flat ceiling (see "Anti-cheat plausibility formula" above) |
 | spawn base cadence    | 800 (ms) — TUNABLE, playtest, not final | `spawnBaseMs` in `DifficultyCurve.ts`, the `t=0` spawn interval feeding `spawnIntervalMs(t)`. Lowered from 900 after the first Phase 4.3 playtest round ("too easy") to raise post-onboarding baseline density slightly |
 | spawn ramp rate       | 0.25 (coeff) — TUNABLE, playtest, not final | `spawnRampCoeff` in `DifficultyCurve.ts`; how fast the `sqrt(t)` cadence ramp climbs. Raised from 0.1 in the same Phase 4.3 pass — the old value barely tightened cadence within a minute of play (~900ms→~510ms by t=60s); now ~800ms→~270ms by t=60s |
 | obstacle speed ramp   | base 220 (px/s), coeff 30 — TUNABLE, playtest, not final | `speedBasePxPerSec` / `speedAccelCoeff` in `DifficultyCurve.ts` feeding `obstacleSpeed(t)`. `speedAccelCoeff` raised from 12 in the same Phase 4.3 pass so obstacle speed roughly doubles over the first minute (~220→~450 px/s by t=60s) instead of climbing only ~40%. Base kept at 220 — the onboarding window already protects the gentle opening |

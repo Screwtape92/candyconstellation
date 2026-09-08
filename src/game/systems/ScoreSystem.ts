@@ -8,20 +8,27 @@ import Phaser from 'phaser'
 export const SURVIVAL_POINTS_PER_SEC = 2
 
 // Generic score tracker for the formula in docs/game-design.md "Scoring":
-// score = survivalPointsPerSec * elapsedSec + Σ(candyValue). The survival term
-// is recomputed on demand from elapsed time (cheap, drift-free) rather than
-// accumulated per tick; only the candy term is a running tally, fed by the
-// `candyCollected` scene event (same emit-an-event pattern as HealthSystem's
-// `playerHit`/`heal`, see docs/architecture.md "Engine patterns").
+// score = survivalPointsPerSec * elapsedSec + Σ(candyValue) + Σ(killValue).
+// The survival term is recomputed on demand from elapsed time (cheap,
+// drift-free) rather than accumulated per tick; the candy and kill terms are
+// running tallies, fed by the `candyCollected`/`obstacleDestroyed` scene
+// events (same emit-an-event pattern as HealthSystem's `playerHit`/`heal`,
+// see docs/architecture.md "Engine patterns"). The kill term was added
+// 2026-09-08 — destroying an obstacle (Sour Blaster, or ramming one with
+// Sugar Shield up) now scores instead of being free, per docs/game-design.md
+// "Obstacle durability".
 export class ScoreSystem {
   private readonly scene: Phaser.Scene
   private candyTally = 0
+  private killTally = 0
 
   constructor(scene: Phaser.Scene) {
     this.scene = scene
     scene.events.on('candyCollected', this.onCandyCollected, this)
+    scene.events.on('obstacleDestroyed', this.onObstacleDestroyed, this)
     scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       scene.events.off('candyCollected', this.onCandyCollected, this)
+      scene.events.off('obstacleDestroyed', this.onObstacleDestroyed, this)
     })
   }
 
@@ -50,11 +57,21 @@ export class ScoreSystem {
 
   get current(): number {
     return Math.floor(
-      SURVIVAL_POINTS_PER_SEC * this.elapsedSec + this.candyTally,
+      SURVIVAL_POINTS_PER_SEC * this.elapsedSec +
+        this.candyTally +
+        this.killTally,
     )
   }
 
   private onCandyCollected(payload: { value: number; x: number; y: number }) {
     this.candyTally += payload.value
+  }
+
+  private onObstacleDestroyed(payload: {
+    value: number
+    x: number
+    y: number
+  }) {
+    this.killTally += payload.value
   }
 }
