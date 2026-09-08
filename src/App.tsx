@@ -12,6 +12,7 @@ import { BuildStory } from './pages/BuildStory'
 import { Landing } from './pages/Landing'
 import { Leaderboard } from './pages/Leaderboard'
 import { PostGame } from './pages/PostGame'
+import { BackgroundMusic } from './site/BackgroundMusic'
 import { IntroSplash } from './site/IntroSplash'
 
 // React owns the shell and switches between screens with plain state — there's
@@ -101,6 +102,11 @@ function App() {
         />
       )}
       {showSplash && <IntroSplash onDone={() => setShowSplash(false)} />}
+      {/* Mounted once here, outside the view switch above, so it's never
+          unmounted by navigating between views — including into/out of
+          `playing`, which destroys and recreates the entire Phaser.Game
+          instance every run. */}
+      <BackgroundMusic />
     </div>
   )
 }

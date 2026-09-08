@@ -11,7 +11,8 @@ export interface AudioCue {
 
 // `blaster-fire-loop` is a continuous rapid-fire loop, not a one-shot —
 // played for as long as the fire key is held (see BlasterSystem.ts), not
-// re-triggered per projectile. Source: user-supplied, audio/rapid_laser_loop.wav.
+// re-triggered per projectile. Source: user-supplied, audio/rapid_laser_loop_2.wav
+// (swapped in 2026-09-08 in place of the first rapid_laser_loop.wav).
 export const audioCues: AudioCue[] = [
   { key: 'blaster-fire-loop', file: 'blaster-fire-loop.wav' },
 ]

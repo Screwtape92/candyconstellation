@@ -402,18 +402,32 @@ constants are finalized.
 
 ## Audio spec
 
-No audio assets exist yet; this is the track/cue list to source or generate
-against:
+**Being built up incrementally from 2026-09-08**, one real user-supplied cue
+at a time, rather than landed all at once — an earlier all-Kenney-CC0 first
+attempt didn't sound right and was fully reverted. Track/cue list, with
+status:
 
-- Music: one looping background track for `PlayScene`.
-- SFX: candy pickup, obstacle hit, power-up activate, game over, UI click.
-  Added 2026-09-07 with Sour Blaster: projectile fire, and obstacle destroyed.
-  The fire cue matters more than most — it's the only audible confirmation
-  that a keypress registered during the cooldown between shots. Keep it short
-  and quiet: at the placeholder 250ms cooldown it can play ~24 times in one
-  power-up window, so anything with a tail will smear.
-- Volume/mute preference persisted to `localStorage`, read by both the React
-  shell (menu music) and Phaser (in-game SFX).
+- **Music: one background track, site-wide.** ✅ Implemented — but broader
+  than originally specced: not scoped to `PlayScene`, but truly global
+  ("must always play, game or no game," 2026-09-08). `src/site/
+  BackgroundMusic.tsx` mounts a plain HTML5 `<audio>` element once at the
+  App root, outside the view switch, so it's never stopped or restarted by
+  navigating between Landing/BuildStory/in-game/PostGame/Leaderboard —
+  deliberately separate from Phaser's own audio, which lives and dies with
+  each run's `Phaser.Game` instance. Autoplay only actually starts once the
+  browser sees a user gesture (click/keydown anywhere), per standard browser
+  autoplay policy — there's always one within the first few seconds
+  (IntroSplash, any button), so this isn't a real gap in practice.
+- SFX: candy pickup, obstacle hit, power-up activate, game over, UI click,
+  obstacle destroyed — not yet sourced. Blaster fire ✅ implemented, and
+  atypical: it's a continuous rapid-fire *loop* (`BlasterSystem.ts`'s
+  `laserLoop`), not a one-shot retriggered per projectile — started the
+  instant the fire key is actually held (independent of the cooldown-gated
+  projectile spawn rate) and stopped the instant it's released, so it reads
+  as one continuous stream rather than discrete clicks.
+- Volume/mute preference persisted to `localStorage`: not yet built — no
+  mute control exists yet for either the site music or in-game SFX. Revisit
+  once more cues land.
 
 ## Feel & experience
 
