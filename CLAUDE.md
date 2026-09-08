@@ -39,6 +39,10 @@ Read these before making design/architecture/asset decisions:
   conventions for this repo.
 - `docs/build-plan.md` — the phased implementation order (what gets built
   before what, and why), distinct from the steady-state specs above.
+- `docs/deploy-pi.md` — step-by-step runbook for the self-hosted deployment
+  (home box/Raspberry Pi + Cloudflare Tunnel, see `docs/architecture.md`
+  "Self-hosted deployment"). Read this one first if the task is literally
+  "deploy this" rather than a design/architecture decision.
 
 ## Data-driven systems
 

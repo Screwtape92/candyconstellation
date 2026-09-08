@@ -432,7 +432,11 @@ Then, separately, run a tunnel pointed at `:8787` to get a public URL — e.g.
 `cloudflared tunnel route dns` against a Cloudflare-hosted zone) or
 `ngrok http 8787`. Neither is configured by this repo — that's the
 operator's own Cloudflare/ngrok account, done on whichever box actually
-runs the tunnel.
+runs the tunnel. **See `docs/deploy-pi.md` for the full copy-pasteable
+runbook** (Node/cloudflared install, systemd services for both the app and
+the tunnel so they survive reboots, verification steps, troubleshooting) —
+this section is the architecture/rationale, that doc is the actual "how to
+deploy this" checklist.
 
 `server/tsconfig.json` compiles with `module`/`moduleResolution: "nodenext"`,
 which determines each *source* file's CJS-vs-ESM output by its nearest
