@@ -92,6 +92,12 @@ independent of the rotation-safety padding above — see that function's
 comment for the exact margin. As with rotation padding, this changes texture
 size, never hitbox size: bodies still come from `spriteArtSize()`.
 
+### Still outstanding
+
+- **Audio.** Neither supplied pack contains any. The audio spec in
+  `game-design.md` (one looping track + 5 SFX cues) is still unmet, and still
+  needs the manual clip-picking described under "Audio asset sourcing" below.
+
 ## Canvas
 
 - 720×960, portrait, fixed aspect ratio (desktop web only, keyboard/mouse —
@@ -322,19 +328,14 @@ frames, decided 2026-07-20).
 
 ## Audio asset sourcing
 
-**Decided 2026-07-15, sourced and wired 2026-09-08:** [Kenney.nl](https://kenney.nl)
-pre-made, CC0-licensed sound packs — see the audio spec in
-`docs/game-design.md` for the full cue list and how it's wired
-(`data/audioCues.ts` + `systems/AudioSystem.ts`).
+**Decided 2026-07-15:** [Kenney.nl](https://kenney.nl) pre-made, CC0-licensed
+sound packs — see the audio spec in `docs/game-design.md` for the track/cue
+list this needs to cover (one looping background track, plus SFX for candy
+pickup/obstacle hit/power-up activate/game over/UI click).
 
-- **Licensing**: CC0 (public domain) — no attribution required. License
-  files kept at `public/assets/audio/LICENSE-kenney-*.txt`, raw source packs
-  at `audio/` (repo root), same convention as the sprite packs.
-- **Packs used**: `kenney_interface-sounds` (UI click, candy pickup),
-  `kenney_sci-fi-sounds` (obstacle hit, power-up activate, game over,
-  blaster fire, obstacle destroyed), `kenney_music-jingles` (the background
-  loop — a short 8-bit jingle, not a long ambient track; none of the
-  supplied packs had one, and looping a short chiptune phrase for the whole
-  run is the classic-arcade convention, not a compromise). A fourth pack,
-  `kenney_impact-sounds`, was supplied but isn't used yet — kept for future
-  SFX variety if a cue ever needs a second variant.
+- **Licensing**: CC0 (public domain) — no attribution required for any clip
+  sourced from Kenney.nl packs.
+- **Selection is still manual**: picking the specific pack(s) and clip(s) per
+  cue requires human listening to judge audio quality/fit — this isn't
+  something that can be resolved programmatically. Browse relevant Kenney.nl
+  packs and pick clips matching each cue in the track/cue list above.

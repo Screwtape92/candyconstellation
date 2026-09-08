@@ -402,34 +402,18 @@ constants are finalized.
 
 ## Audio spec
 
-**Implemented 2026-09-08**, sourced from Kenney CC0 packs (kenney_interface-
-sounds, kenney_sci-fi-sounds, kenney_music-jingles — same license/source
-convention as the sprite art). Everything below is real, not a placeholder
-list, in `src/game/data/audioCues.ts` + `src/game/systems/AudioSystem.ts`:
+No audio assets exist yet; this is the track/cue list to source or generate
+against:
 
-- Music: one looping background track for `PlayScene` — a short 8-bit jingle
-  looped for the whole run, not a long ambient bed (none of the supplied
-  packs had one). This is the classic-arcade convention, not a compromise:
-  plenty of NES/Game Boy games loop an 8-16 second phrase for an entire
-  level. Stops the instant `gameOver` fires — looping under the frozen GAME
-  OVER freeze-frame (see "Feel & experience" below) would undercut it.
-- SFX: candy pickup, obstacle hit, power-up activate, game over, UI click,
-  projectile fire, obstacle destroyed — seven cues, one event listener each
-  in `AudioSystem`, all event-driven off events these systems already emit
-  (`candyCollected`, `playerDamaged`, `powerUpApplied`, `gameOver`,
-  `obstacleDestroyed`, `blasterFired`). The fire cue matters more than most
-  — it's the only audible confirmation that a keypress registered during the
-  cooldown between shots — so it's a short, dry cue with no tail, since at
-  the 250ms cooldown it can play ~24 times in one power-up window.
-- Volume/mute: a single global mute toggle (`AudioSystem`'s bottom-right
-  in-canvas button, the one HUD corner nothing else uses), persisted to
-  `localStorage` (`candyConstellation.audioMuted`) and read on every fresh
-  `PlayScene` (a "Play again" run starts in whatever mute state the player
-  left). **Scoped down from the original spec**: no separate React-side menu
-  music — the site shell (Landing/BuildStory/Leaderboard) stays silent, only
-  the Phaser game has sound. Revisit only if the site itself wants ambient
-  audio later; this was a deliberate scope cut given the runway, not an
-  oversight.
+- Music: one looping background track for `PlayScene`.
+- SFX: candy pickup, obstacle hit, power-up activate, game over, UI click.
+  Added 2026-09-07 with Sour Blaster: projectile fire, and obstacle destroyed.
+  The fire cue matters more than most — it's the only audible confirmation
+  that a keypress registered during the cooldown between shots. Keep it short
+  and quiet: at the placeholder 250ms cooldown it can play ~24 times in one
+  power-up window, so anything with a tail will smear.
+- Volume/mute preference persisted to `localStorage`, read by both the React
+  shell (menu music) and Phaser (in-game SFX).
 
 ## Feel & experience
 
