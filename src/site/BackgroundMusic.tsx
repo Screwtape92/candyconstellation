@@ -28,6 +28,23 @@ const MUSIC_VOLUME = 0.4
 // actual gesture — sometimes loses the race against the file still being
 // fetched and silently fails. Calling it early, blocked or not, means the
 // file is already loaded by the time a real gesture arrives.
+// Every event type any browser's autoplay policy might specifically require
+// as "the" qualifying gesture — Chrome's is permissive about which one
+// (pointerdown is enough), but Safari's WebKit policy is stricter and wants
+// the play() call to be the direct result of a *click* or *keydown*
+// specifically, not the earlier-firing pointerdown/mousedown. Listening for
+// all of them, in the capture phase (so nothing upstream calling
+// stopPropagation on the bubble phase can swallow it first), covers every
+// browser's policy rather than assuming Chrome's is the only one that
+// matters.
+const GESTURE_EVENTS = [
+  'pointerdown',
+  'mousedown',
+  'click',
+  'keydown',
+  'touchend',
+] as const
+
 export function BackgroundMusic() {
   const audioRef = useRef<HTMLAudioElement>(null)
 
@@ -47,17 +64,20 @@ export function BackgroundMusic() {
     attemptPlay()
 
     const onPlaying = () => {
-      window.removeEventListener('pointerdown', attemptPlay)
-      window.removeEventListener('keydown', attemptPlay)
+      for (const type of GESTURE_EVENTS) {
+        window.removeEventListener(type, attemptPlay, true)
+      }
     }
     audio.addEventListener('playing', onPlaying)
-    window.addEventListener('pointerdown', attemptPlay)
-    window.addEventListener('keydown', attemptPlay)
+    for (const type of GESTURE_EVENTS) {
+      window.addEventListener(type, attemptPlay, true)
+    }
 
     return () => {
       audio.removeEventListener('playing', onPlaying)
-      window.removeEventListener('pointerdown', attemptPlay)
-      window.removeEventListener('keydown', attemptPlay)
+      for (const type of GESTURE_EVENTS) {
+        window.removeEventListener(type, attemptPlay, true)
+      }
     }
   }, [])
 
