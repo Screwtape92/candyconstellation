@@ -13,7 +13,7 @@ the current-state spec — update it whenever an architectural decision changes.
 - **Backend**: Azure Static Web Apps (hosting + integrated Functions API) +
   Azure Table Storage (leaderboard persistence). **Added 2026-09-08**: a
   second, self-hosted deployment path (`server/`) exists alongside this —
-  see "Self-hosted deployment (home box + ngrok)" below for why and how it
+  see "Self-hosted deployment (home box + tunnel)" below for why and how it
   differs. Azure remains the primary/original design; the self-hosted path
   is an alternate that reuses the same validation/anti-cheat logic against a
   SQLite file instead of Table Storage.
@@ -48,7 +48,7 @@ api/                Azure Functions
   submitScore/
   getLeaderboard/
   shared/           tableStorageClient, inputValidation, antiCheat, rateLimit
-server/             Self-hosted alternative (home box + ngrok) - see
+server/             Self-hosted alternative (home box + tunnel) - see
                     "Self-hosted deployment" below. index.ts, api.ts, db.ts,
                     rateLimit.ts, scores.ts, staticFiles.ts. Imports
                     api/shared/{inputValidation,antiCheat,scoreKey}.ts
@@ -338,17 +338,28 @@ Submission must never block gameplay:
 - Starting a new run or navigating the menu never waits on a pending
   submission.
 
-## Self-hosted deployment (home box + ngrok)
+## Self-hosted deployment (home box + tunnel)
 
 **Added 2026-09-08.** The Azure subscription originally intended for this
 project (`Ian Joubert 3 - MPN`) turned out to be in a `Disabled` (read-only)
 billing state 3 days before the event, with no time to resolve it — Azure
 returns `ReadOnlyDisabledSubscription` on any write/deploy call. Rather than
 block on that, a second deployment path was added: run everything on a home
-box (or any machine with Node 22+) and expose it via an ngrok tunnel. This is
-an *alternate* path, not a replacement — the Azure Functions code under
-`api/` is untouched and still the original design if the subscription gets
+box (or any machine with Node 22+) and expose it via a tunnel. This is an
+*alternate* path, not a replacement — the Azure Functions code under `api/`
+is untouched and still the original design if the subscription gets
 reactivated later.
+
+**Tunnel choice: Cloudflare Tunnel over ngrok (decided 2026-09-08).** ngrok's
+free tier doesn't support custom domains at all (paid tiers only) and shows
+visitors an interstitial warning page before forwarding. Cloudflare Tunnel is
+free with no such interstitial, and supports a real custom domain out of the
+box (`cloudflared tunnel route dns` manages the CNAME on a Cloudflare-hosted
+zone directly) — a better fit for a link that gets shared with the whole
+company. The server itself is tunnel-agnostic: it's a single process on a
+single port doing same-origin serving, so nothing here depends on which
+tunnel product sits in front of it. The one place the tunnel choice actually
+touches the code is client-IP detection for rate-limiting, covered below.
 
 **Why this was easy to add rather than a rewrite:** the frontend already
 calls same-origin `fetch('/api/submitScore')` / `fetch('/api/getLeaderboard')`
@@ -396,10 +407,17 @@ fallback beyond `/` itself.
   and treated as success (`{ ok: true, duplicate: true }`, HTTP 200) instead
   of erroring, so the client's localStorage retry queue clears.
 - **Rate-limiting/client IP**: identical policy to `api/shared/rateLimit.ts`
-  (5 submissions per IP per 10-minute window). ngrok's free tier terminates
-  TLS and forwards with `x-forwarded-for` set to the real visitor IP, the
-  same shape Azure Front Door/SWA already provides in production, so
-  `getClientIp` reads the same header.
+  (5 submissions per IP per 10-minute window). `getClientIp`
+  (`server/rateLimit.ts`) checks headers in priority order: `cf-connecting-ip`
+  first (what Cloudflare — including through a Cloudflare Tunnel — sets to
+  the real visitor IP; preferred over `x-forwarded-for` specifically because
+  cloudflared has a known bug, [cloudflare/cloudflared#1426](https://github.com/cloudflare/cloudflared/issues/1426),
+  where `x-forwarded-for` reaching the origin can be wrong or missing), then
+  `x-forwarded-for` (set by ngrok's free tier, and by Azure Front Door/SWA in
+  the original deployment), then the raw socket address for a direct
+  connection. **Verified 2026-09-08**: a request carrying both headers rate-
+  limits per `cf-connecting-ip`, correctly ignoring a misleading
+  `x-forwarded-for` sent alongside it.
 
 **Build/run.** From the repo root:
 
@@ -409,8 +427,13 @@ npm run build:server    # server/*.ts + the three shared api/shared modules -> s
 npm run start:server    # node server/dist/server/index.js — serves dist/ + the API on :8787
 ```
 
-Then, separately, run `ngrok http 8787` (requires the operator's own ngrok
-account/authtoken — not something this repo configures) to get a public URL.
+Then, separately, run a tunnel pointed at `:8787` to get a public URL — e.g.
+`cloudflared tunnel run <name>` (after `cloudflared tunnel login` +
+`cloudflared tunnel route dns` against a Cloudflare-hosted zone) or
+`ngrok http 8787`. Neither is configured by this repo — that's the
+operator's own Cloudflare/ngrok account, done on whichever box actually
+runs the tunnel.
+
 `server/tsconfig.json` compiles with `module`/`moduleResolution: "nodenext"`,
 which determines each *source* file's CJS-vs-ESM output by its nearest
 `package.json` — `api/shared/*.ts` (under `api/`, no `"type"` field, so

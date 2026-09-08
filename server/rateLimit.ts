@@ -20,18 +20,33 @@ function sanitizeIp(raw: string): string {
   return cleaned.length > 0 ? cleaned : LOCAL_DEV_IP
 }
 
-// ngrok's free tier terminates TLS and forwards to the local server with
-// x-forwarded-for set to the real visitor IP, same shape as Azure Front
-// Door/SWA in the original deployment ("client, proxy1, proxy2, ..."; the
-// leftmost entry is the original client). Falls back to the raw socket
-// address for a direct (non-tunnelled) connection.
+// Checked in priority order:
+// 1. `cf-connecting-ip` — set by Cloudflare (including through a Cloudflare
+//    Tunnel/cloudflared) to the real visitor IP. Preferred over
+//    x-forwarded-for specifically for tunnelled traffic: cloudflared has a
+//    known bug (cloudflare/cloudflared#1426) where x-forwarded-for reaching
+//    the origin can be wrong/missing, while cf-connecting-ip is what
+//    Cloudflare itself documents as the reliable header for this.
+// 2. `x-forwarded-for` — set by ngrok's free tier, and by Azure Front
+//    Door/SWA in the original deployment ("client, proxy1, proxy2, ...";
+//    the leftmost entry is the original client).
+// 3. The raw socket address, for a direct (non-tunnelled) connection.
 export function getClientIp(req: IncomingMessage): string {
+  const cfConnectingIp = req.headers['cf-connecting-ip']
+  const cfRaw = Array.isArray(cfConnectingIp)
+    ? cfConnectingIp[0]
+    : cfConnectingIp
+  if (cfRaw) {
+    return sanitizeIp(cfRaw.trim())
+  }
+
   const forwardedFor = req.headers['x-forwarded-for']
-  const raw = Array.isArray(forwardedFor) ? forwardedFor[0] : forwardedFor
-  if (raw) {
-    const [first] = raw.split(',')
+  const xffRaw = Array.isArray(forwardedFor) ? forwardedFor[0] : forwardedFor
+  if (xffRaw) {
+    const [first] = xffRaw.split(',')
     return sanitizeIp(first.trim())
   }
+
   return sanitizeIp(req.socket.remoteAddress ?? LOCAL_DEV_IP)
 }
 

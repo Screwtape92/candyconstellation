@@ -44,7 +44,7 @@ The user asked specifically about sprite bounding boxes; that turned out to be o
 The user had already independently created a `candyconstellation` folder, connected to `github.com/Screwtape92/candyconstellation`, with its own git history — while a separate `git init` had been run one level up, in the parent `Beerfest` folder, creating a nested-repo situation.
 **Why fixed:** a git repo nested inside another repo is messy (the outer repo would try to track the inner one as an embedded submodule). Resolution: made `candyconstellation` the real project root, moved the `.gitignore`/README content into it, and deleted the redundant outer repo (which had zero commits, so nothing was lost).
 
-## Second deployment path: home box + ngrok (2026-09-08)
+## Second deployment path: home box + tunnel (2026-09-08)
 Three days before the event, the Azure subscription intended to host this
 (`Ian Joubert 3 - MPN`) turned out to be in a `Disabled`/read-only billing
 state — confirmed via `az deployment group validate`, which returned
@@ -57,9 +57,20 @@ had zero environment-specific coupling to the backend (same-origin
 (two endpoints) with mostly storage-agnostic logic already
 (`inputValidation.ts`, `antiCheat.ts` have no Azure imports) — so standing up
 an equivalent self-hosted server (Node + built-in `node:sqlite`, no native
-build step, exposed via an ngrok tunnel from a home box) was faster than
-either waiting on Azure or improvising a partial workaround under deadline
+build step, exposed via a tunnel from a home box) was faster than either
+waiting on Azure or improvising a partial workaround under deadline
 pressure.
+**Tunnel choice — ngrok considered, then Cloudflare Tunnel chosen
+(2026-09-08):** ngrok was the first idea, but its free tier turned out not
+to support custom domains at all (paid tiers only) and shows visitors an
+interstitial warning page before forwarding — a bad fit for a link shared
+with the whole company. Cloudflare Tunnel is free with neither limitation
+(a custom domain works via `cloudflared tunnel route dns` against a
+Cloudflare-hosted zone), so that's the actual plan; ngrok is still
+documented as a fallback since the server is tunnel-agnostic. This is why
+`getClientIp` (`server/rateLimit.ts`) checks `cf-connecting-ip` before
+`x-forwarded-for` — Cloudflare's own docs flag `x-forwarded-for` as
+unreliable through a tunnel (cloudflare/cloudflared#1426).
 **Not a replacement:** the Azure Functions code under `api/` is untouched.
 If the subscription gets reactivated, that path still works as originally
 designed — this is an alternate, not a migration. See
