@@ -44,5 +44,27 @@ The user asked specifically about sprite bounding boxes; that turned out to be o
 The user had already independently created a `candyconstellation` folder, connected to `github.com/Screwtape92/candyconstellation`, with its own git history — while a separate `git init` had been run one level up, in the parent `Beerfest` folder, creating a nested-repo situation.
 **Why fixed:** a git repo nested inside another repo is messy (the outer repo would try to track the inner one as an embedded submodule). Resolution: made `candyconstellation` the real project root, moved the `.gitignore`/README content into it, and deleted the redundant outer repo (which had zero commits, so nothing was lost).
 
+## Second deployment path: home box + ngrok (2026-09-08)
+Three days before the event, the Azure subscription intended to host this
+(`Ian Joubert 3 - MPN`) turned out to be in a `Disabled`/read-only billing
+state — confirmed via `az deployment group validate`, which returned
+`ReadOnlyDisabledSubscription`. No write/deploy operation is possible on it
+until it's re-enabled, and there was no time to chase that down before the
+event.
+**Why a self-hosted path instead of waiting on Azure:** the frontend already
+had zero environment-specific coupling to the backend (same-origin
+`/api/*` fetches, no base URL config), and the actual API surface is tiny
+(two endpoints) with mostly storage-agnostic logic already
+(`inputValidation.ts`, `antiCheat.ts` have no Azure imports) — so standing up
+an equivalent self-hosted server (Node + built-in `node:sqlite`, no native
+build step, exposed via an ngrok tunnel from a home box) was faster than
+either waiting on Azure or improvising a partial workaround under deadline
+pressure.
+**Not a replacement:** the Azure Functions code under `api/` is untouched.
+If the subscription gets reactivated, that path still works as originally
+designed — this is an alternate, not a migration. See
+`docs/architecture.md`'s "Self-hosted deployment (home box + ngrok)" for the
+concrete implementation.
+
 ## Ultraplan attempts and why this log exists
 The user tried handing planning off to Ultraplan (Claude Code on the web) twice. Both times the cloud session had no material to work from, because Ultraplan's cloud agents only see what's actually committed to the GitHub repo — they have no access to local chat history or the local plan-mode file used to reach approval in the CLI session. This log exists specifically to give any future cloud or local agent that same context, in-repo, rather than only in a conversation transcript.

@@ -26,3 +26,7 @@ dist-ssr
 # Local Azurite storage emulator data (Phase 5/6 local-first dev, per
 # docs/architecture.md) - machine-local state, never checked in.
 .azurite-data/
+
+# Self-hosted (home box + ngrok) deployment's SQLite database - machine-local
+# state, never checked in (docs/architecture.md "Self-hosted deployment").
+/data/

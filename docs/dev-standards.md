@@ -93,3 +93,8 @@ actually building the game.
 - Phase 5/6 backend work additionally needs Azure Functions Core Tools
   (`func start`) and Azurite (Table Storage emulator) — not needed yet for
   frontend-only work.
+- The self-hosted deployment path (`docs/architecture.md` "Self-hosted
+  deployment (home box + ngrok)") needs nothing beyond Node 22.5+: `npm run
+  build && npm run build:server && npm run start:server`, no Azure tooling,
+  no separate `npm install` for `server/` (it has no dependencies of its
+  own — `node:http` + `node:sqlite` only).

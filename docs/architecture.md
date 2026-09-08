@@ -11,7 +11,12 @@ the current-state spec — update it whenever an architectural decision changes.
   APIs used — `Scene`, Arcade Physics, `Scale.FIT`, `Phaser.AUTO` — all work
   fine on 4, so the version was updated here rather than pinning back to 3.)
 - **Backend**: Azure Static Web Apps (hosting + integrated Functions API) +
-  Azure Table Storage (leaderboard persistence).
+  Azure Table Storage (leaderboard persistence). **Added 2026-09-08**: a
+  second, self-hosted deployment path (`server/`) exists alongside this —
+  see "Self-hosted deployment (home box + ngrok)" below for why and how it
+  differs. Azure remains the primary/original design; the self-hosted path
+  is an alternate that reuses the same validation/anti-cheat logic against a
+  SQLite file instead of Table Storage.
 - **Auth**: none. Players submit a free-text name at GameOver, classic
   arcade-high-score-table style — no sign-in step, no identity provider. See
   `docs/planning-log.md` ("Sign-in: dropped Entra ID...") for why.
@@ -43,6 +48,11 @@ api/                Azure Functions
   submitScore/
   getLeaderboard/
   shared/           tableStorageClient, inputValidation, antiCheat, rateLimit
+server/             Self-hosted alternative (home box + ngrok) - see
+                    "Self-hosted deployment" below. index.ts, api.ts, db.ts,
+                    rateLimit.ts, scores.ts, staticFiles.ts. Imports
+                    api/shared/{inputValidation,antiCheat,scoreKey}.ts
+                    directly (storage-agnostic, so reused as-is).
 ```
 
 ## React ⇄ Phaser integration
@@ -327,6 +337,98 @@ Submission must never block gameplay:
   retried submission can't create a duplicate row.
 - Starting a new run or navigating the menu never waits on a pending
   submission.
+
+## Self-hosted deployment (home box + ngrok)
+
+**Added 2026-09-08.** The Azure subscription originally intended for this
+project (`Ian Joubert 3 - MPN`) turned out to be in a `Disabled` (read-only)
+billing state 3 days before the event, with no time to resolve it — Azure
+returns `ReadOnlyDisabledSubscription` on any write/deploy call. Rather than
+block on that, a second deployment path was added: run everything on a home
+box (or any machine with Node 22+) and expose it via an ngrok tunnel. This is
+an *alternate* path, not a replacement — the Azure Functions code under
+`api/` is untouched and still the original design if the subscription gets
+reactivated later.
+
+**Why this was easy to add rather than a rewrite:** the frontend already
+calls same-origin `fetch('/api/submitScore')` / `fetch('/api/getLeaderboard')`
+with no environment-specific base URL (see "Score-submission resilience"
+below and `src/api-client/*`), so serving the frontend build and the API from
+one process on one port needed zero frontend changes. The app also has no
+client-side router (`App.tsx`: "one screen transitioning to another, not
+deep-linkable routes"), so the static file server needs no SPA history
+fallback beyond `/` itself.
+
+**What's different from the Azure path:**
+
+- **Storage**: SQLite (Node's built-in, experimental `node:sqlite`) replaces
+  Azure Table Storage. One file at `data/candy-constellation.db`, created on
+  first run, gitignored. Requires Node 22.5+ (when `node:sqlite` first
+  landed, experimental) — the general "Node 22+" floor in "Local dev setup"
+  below isn't quite enough on its own for this path specifically. Chosen
+  over `better-sqlite3` specifically because it needs no native build step — the whole point of this path is "nothing to
+  provision, just run it," and a native-module compile failure on an
+  unfamiliar home box would defeat that.
+  - `scores` table: `submission_guid TEXT UNIQUE` (retry-safety, see below),
+    `player_name`, `score`, `elapsed_sec`, `achieved_at_utc`. No inverted-key
+    encoding like Table Storage's `RowKey` — SQLite just does
+    `ORDER BY score DESC LIMIT ?` directly, so `api/shared/scoreKey.ts`'s
+    `buildRowKey`/`invertedScorePadded` aren't used here (only its
+    `SCORE_OFFSET` validation bound is, via `inputValidation.ts`).
+  - `rate_limits` table: `(client_ip, bucket)` primary key + `count`, same
+    10-minute-bucket/5-per-window policy as `api/shared/rateLimit.ts`, just
+    against SQLite instead of a Table Storage `RateLimits` table.
+- **Server**: a single Node process (`server/index.ts`, plain `node:http` —
+  no Express or other HTTP framework dependency, since the route surface is
+  two JSON endpoints plus static files) serves the Vite production build
+  (`dist/`) and the two API routes from one port (default `8787`, override
+  with `PORT`). No CORS needed — same origin, same process.
+- **Shared logic, not duplicated**: `validateSubmission` (`inputValidation.ts`)
+  and `isPlausibleScore` (`antiCheat.ts`) are imported directly from
+  `api/shared/` — those two modules have zero Azure-specific imports, so
+  `server/tsconfig.json` compiles them into its own build alongside
+  `server/*.ts` rather than duplicating the logic. Only the storage layer
+  (`tableStorageClient.ts`/`rateLimit.ts` on the Azure side,
+  `db.ts`/`rateLimit.ts` on this side) differs.
+- **Retry-safety**: mirrors the Azure path's rule exactly — a retried
+  `submitScore` reuses the same client-generated `submissionGuid`, which
+  collides on the `scores.submission_guid UNIQUE` constraint; that's caught
+  and treated as success (`{ ok: true, duplicate: true }`, HTTP 200) instead
+  of erroring, so the client's localStorage retry queue clears.
+- **Rate-limiting/client IP**: identical policy to `api/shared/rateLimit.ts`
+  (5 submissions per IP per 10-minute window). ngrok's free tier terminates
+  TLS and forwards with `x-forwarded-for` set to the real visitor IP, the
+  same shape Azure Front Door/SWA already provides in production, so
+  `getClientIp` reads the same header.
+
+**Build/run.** From the repo root:
+
+```
+npm run build          # frontend -> dist/
+npm run build:server    # server/*.ts + the three shared api/shared modules -> server/dist/
+npm run start:server    # node server/dist/server/index.js — serves dist/ + the API on :8787
+```
+
+Then, separately, run `ngrok http 8787` (requires the operator's own ngrok
+account/authtoken — not something this repo configures) to get a public URL.
+`server/tsconfig.json` compiles with `module`/`moduleResolution: "nodenext"`,
+which determines each *source* file's CJS-vs-ESM output by its nearest
+`package.json` — `api/shared/*.ts` (under `api/`, no `"type"` field, so
+CommonJS) compiles to CommonJS syntax even though it's emitted into
+`server/dist/api/shared/`, which has no `package.json` of its own and would
+otherwise inherit the repo root's `"type": "module"` at runtime — a mismatch
+that made Node parse valid CommonJS output as ESM and see zero exports.
+`scripts/mark-server-dist-cjs.mjs` (run automatically as part of
+`build:server`) drops a `{"type":"commonjs"}` package.json into
+`server/dist/api/` to fix that boundary — the standard Node fix for a
+dual-package hazard like this, not a workaround specific to this project.
+
+**Verified 2026-09-08** end-to-end against a local build: static serving
+(`/` and `/assets/*`, 404 for genuinely missing files), `submitScore` (valid
+201, retried-`submissionGuid` duplicate 200, implausible-score 422,
+malformed-JSON 400), rate-limiting (429 after 5 in a window), and
+`getLeaderboard` (empty, then reflecting an inserted row, `ORDER BY score
+DESC`).
 
 ## Performance budget
 

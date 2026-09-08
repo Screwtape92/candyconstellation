@@ -13,7 +13,9 @@
     "preview": "vite preview",
     "verify:play": "node scripts/verify-play.mjs",
     "verify:textures": "node scripts/dump-textures.mjs",
-    "optimize:images": "node scripts/optimize-images.mjs"
+    "optimize:images": "node scripts/optimize-images.mjs",
+    "build:server": "tsc -p server && node scripts/mark-server-dist-cjs.mjs",
+    "start:server": "node server/dist/server/index.js"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",
