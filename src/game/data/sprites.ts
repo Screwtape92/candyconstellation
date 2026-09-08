@@ -36,7 +36,16 @@ export interface SpriteVisual {
    * magnet, and both read better as clean flat shapes at 24-32px than anything
    * that could be cropped out of the packs.
    */
-  draw?: 'star' | 'magnet' | 'shield' | 'blaster' | 'bolt'
+  draw?: 'star' | 'magnet' | 'bolt'
+  /**
+   * Bakes the art rotated 180° from its source orientation. Added 2026-09-08
+   * for the Sour Blaster ship reskin (`enemyBlue3` from kenney_space-shooter-
+   * remastered, authored nose-down like every other enemy in that pack) —
+   * baking it pre-rotated keeps the player sprite's own `angle` at a
+   * constant 0 the way it always has been, rather than special-casing
+   * rotation only while one specific texture is active.
+   */
+  rotate180?: boolean
   /**
    * Composite a tapering motion tail above the art, for `sour-comet`'s
    * "trailing tail baked into the loop frames" (docs/asset-spec.md).
@@ -61,6 +70,12 @@ export interface SpriteVisual {
 }
 
 export const PLAYER_TEXTURE_KEY = 'player'
+// The player's ship while Sour Blaster is active (docs/game-design.md
+// "Power-ups") — swapped in by powerUps.ts's onApply/onExpire, not a
+// separate entity. `enemyBlue3` from kenney_space-shooter-remastered, baked
+// `rotate180` since that pack's enemies face down by default and the player
+// always faces up.
+export const PLAYER_BLASTER_TEXTURE_KEY = 'player-blaster'
 
 // Sizes are docs/asset-spec.md's "Pixel dimensions" table, which was itself
 // anchored to the Phase 4.3-playtested placeholder footprints. Only `player`
@@ -69,9 +84,18 @@ export const PLAYER_TEXTURE_KEY = 'player'
 export const spriteVisuals: SpriteVisual[] = [
   {
     key: PLAYER_TEXTURE_KEY,
-    file: 'src_player.png',
+    // playerShip1_red from kenney_space-shooter-remastered — swapped
+    // 2026-09-08 from the original kenney_space-shooter-extension art.
+    file: 'src_player-ship.png',
     w: 44,
     h: 40,
+  },
+  {
+    key: PLAYER_BLASTER_TEXTURE_KEY,
+    file: 'src_player-blaster.png',
+    w: 44,
+    h: 40,
+    rotate180: true,
   },
   // Obstacles — the size hierarchy from docs/asset-spec.md (jawbreaker heaviest
   // at 56, sour-comet a tall 24x64) is what keeps hazards reading as heavier
@@ -146,23 +170,38 @@ export const spriteVisuals: SpriteVisual[] = [
     h: 38,
     glow: 0xf9b9d8,
   },
-  // Added 2026-09-07 (docs/game-design.md "Power-ups"). Both procedurally
-  // drawn, same reasoning as candy-magnet/candy-star above: neither pack has a
-  // usable shield or ray-gun silhouette, and a clean flat shape reads better
-  // at 38px than anything croppable out of them.
+  // Added 2026-09-07 as procedural shapes (neither original pack had a usable
+  // shield/ray-gun silhouette); swapped 2026-09-08 for real art once the user
+  // supplied kenney_space-shooter-remastered, which has both. Tinted to keep
+  // each power-up's already-established colour identity (pink shield, blue
+  // blaster) rather than the source art's own colours.
   {
     key: 'sugar-shield',
-    draw: 'shield',
+    file: 'src_sugar-shield.png',
     w: 38,
     h: 38,
+    tint: 0xffb3c6,
     glow: 0xffb3c6,
   },
   {
     key: 'sour-blaster',
-    draw: 'blaster',
+    file: 'src_sour-blaster.png',
     w: 38,
     h: 38,
+    tint: 0x4dd2ff,
     glow: 0x4dd2ff,
+  },
+  // The on-ship shield-bubble effect while Sugar Shield is active
+  // (PowerUpBadges.ts) — a real forcefield-ring graphic (`shield1` from
+  // kenney_space-shooter-remastered's Effects folder), replacing an earlier
+  // enlarged copy of the pickup icon above. Sized to actually surround the
+  // ship, not read as a pickup. No glow of its own — it *is* the glow.
+  {
+    key: 'shield-effect',
+    file: 'src_shield-effect.png',
+    w: 96,
+    h: 96,
+    tint: 0xffb3c6,
   },
   // Sour Blaster's projectile — not a spawn-table row (BlasterSystem creates
   // these directly, not SpawnSystem), so it's baked but never spawned by the

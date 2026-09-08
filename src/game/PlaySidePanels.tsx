@@ -1,7 +1,10 @@
-import type { ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 
+import { spriteVisual } from './data/sprites'
 import type { HudState } from './eventBus'
+import { bakeSpriteCanvas, spriteSourceUrl } from './spriteBaking'
 import { useHudState } from './useHudState'
+import { loadImage } from '../site/useBakedSprites'
 
 // Same hex values as PowerUpSystem.ts's HUD_COLOR map (Phaser needs numbers,
 // this needs CSS strings) — keep the two in sync by eye if a power-up's
@@ -15,25 +18,66 @@ const DEFAULT_COLOR = '#8be9fd'
 
 const clampFraction = (value: number) => Math.min(1, Math.max(0, value))
 
+// Bakes just the one sprite this panel needs (the Candy Heart power-up icon,
+// reused as the health-pip glyph — "hearts, not blocks") rather than the
+// full set useBakedSprites bakes for the how-to-play legend. Static art, so
+// this only ever runs once per mount.
+function useHeartIconUrl() {
+  const [url, setUrl] = useState<string | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    const visual = spriteVisual('candy-heart')
+    if (!visual) {
+      return
+    }
+    const bake = async () => {
+      const source = visual.file
+        ? await loadImage(spriteSourceUrl(visual.file))
+        : undefined
+      const canvas = bakeSpriteCanvas(visual, source)
+      if (!cancelled) {
+        setUrl(canvas.toDataURL())
+      }
+    }
+    bake().catch((err: unknown) => {
+      console.error('Could not bake heart icon', err)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  return url
+}
+
 function HealthPips({
   health,
   maxHealth,
+  heartUrl,
 }: {
   health: number
   maxHealth: number
+  heartUrl: string | null
 }) {
   return (
     <div className="flex flex-col items-center gap-3">
       <p className="font-mono text-xs tracking-[0.3em] text-dim">HEALTH</p>
       <div className="flex gap-2">
-        {Array.from({ length: maxHealth }).map((_, i) => (
-          <span
-            key={i}
-            className={`h-14 w-14 border-2 border-rim shadow-[inset_-2px_-2px_0_rgba(0,0,0,0.35),inset_2px_2px_0_rgba(255,255,255,0.15)] ${
-              i < health ? 'bg-bubblegum' : 'bg-panel'
-            }`}
-          />
-        ))}
+        {Array.from({ length: maxHealth }).map((_, i) =>
+          heartUrl ? (
+            <img
+              key={i}
+              src={heartUrl}
+              alt=""
+              className={`h-14 w-14 ${i < health ? '' : 'opacity-20 grayscale'}`}
+            />
+          ) : (
+            // Before the bake resolves — same footprint, so nothing shifts
+            // once the real icon appears.
+            <span key={i} className="h-14 w-14" />
+          ),
+        )}
       </div>
     </div>
   )
@@ -89,13 +133,19 @@ function BlasterFlash() {
 function StatusPanel({
   hud,
   blasterFlash,
+  heartUrl,
 }: {
   hud: HudState
   blasterFlash: boolean
+  heartUrl: string | null
 }) {
   return (
     <div className="flex w-full flex-col items-center gap-10">
-      <HealthPips health={hud.health} maxHealth={hud.maxHealth} />
+      <HealthPips
+        health={hud.health}
+        maxHealth={hud.maxHealth}
+        heartUrl={heartUrl}
+      />
       <ScoreReadout score={hud.score} />
       <PowerUpTimers powerUps={hud.powerUps} />
       {blasterFlash && <BlasterFlash />}
@@ -112,15 +162,24 @@ function StatusPanel({
 // window is never squeezed to make room.
 export function PlaySidePanels({ children }: { children: ReactNode }) {
   const { hud, blasterFlash } = useHudState()
+  const heartUrl = useHeartIconUrl()
 
   return (
     <div className="flex h-full w-full items-center justify-center gap-10">
       <div className="hidden w-64 shrink-0 justify-end xl:flex">
-        <StatusPanel hud={hud} blasterFlash={blasterFlash} />
+        <StatusPanel
+          hud={hud}
+          blasterFlash={blasterFlash}
+          heartUrl={heartUrl}
+        />
       </div>
       <div className="h-full aspect-[3/4]">{children}</div>
       <div className="hidden w-64 shrink-0 xl:flex">
-        <StatusPanel hud={hud} blasterFlash={blasterFlash} />
+        <StatusPanel
+          hud={hud}
+          blasterFlash={blasterFlash}
+          heartUrl={heartUrl}
+        />
       </div>
     </div>
   )

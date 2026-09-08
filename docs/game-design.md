@@ -231,6 +231,13 @@ still running.
     candy the player wanted would be a trap rather than a reward.
   - A projectile that leaves the top of the screen is destroyed, like any
     other off-screen entity.
+  - **The ship itself reskins while active — added 2026-09-08.** `onApply`/
+    `onExpire` swap the player's texture between `PLAYER_TEXTURE_KEY` and
+    `PLAYER_BLASTER_TEXTURE_KEY` (`data/sprites.ts`), not a separate entity or
+    an overlay. This replaced the on-ship badge (`PowerUpBadges.ts`) that
+    every other power-up still gets: the ship visibly changing look already
+    answers "do I have the gun right now" more directly than a floating icon
+    beside it did, so keeping both would have been redundant.
 
 Every numeric constant these four rows introduce — the health-restore amount,
 each timed row's own `durationMs`, and the three Sour Blaster projectile

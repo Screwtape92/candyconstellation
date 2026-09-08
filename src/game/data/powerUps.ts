@@ -1,5 +1,6 @@
 import type { Player } from '../entities/Player'
 import { BLASTER_READY_EVENT, eventBus } from '../eventBus'
+import { PLAYER_BLASTER_TEXTURE_KEY, PLAYER_TEXTURE_KEY } from './sprites'
 
 // Generic timed-effect power-up shape (see docs/game-design.md "Power-ups").
 // Adding a power-up is adding a row here, never new systems code — PowerUpSystem
@@ -96,6 +97,12 @@ export const powerUps: PowerUpDef[] = [
   // SHOOT!" flash (docs/game-design.md, playtest feedback 2026-09-08) fires
   // each time — distinct from the in-canvas hint, which is deliberately
   // once-per-session.
+  //
+  // Reskins the ship itself while active (added 2026-09-08) — swapping to
+  // PLAYER_BLASTER_TEXTURE_KEY here, not a separate entity, is why the
+  // on-ship badge for this power-up was removed (PowerUpBadges.ts): the ship
+  // changing look already answers "do I have the gun" more directly than a
+  // floating icon next to it did.
   {
     id: 'sour-blaster',
     label: 'Sour Blaster',
@@ -103,11 +110,13 @@ export const powerUps: PowerUpDef[] = [
     stacking: 'refresh',
     onApply: (player) => {
       player.blasterActive = true
+      player.setTexture(PLAYER_BLASTER_TEXTURE_KEY)
       player.scene.events.emit('blasterPickedUp')
       eventBus.emit(BLASTER_READY_EVENT)
     },
     onExpire: (player) => {
       player.blasterActive = false
+      player.setTexture(PLAYER_TEXTURE_KEY)
     },
   },
 ]

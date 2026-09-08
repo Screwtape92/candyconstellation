@@ -4,12 +4,13 @@ import type { Player } from '../entities/Player'
 
 // On-ship visual per active timed power-up (added 2026-09-07, playtest
 // feedback: "not obvious that you have powerups" — the HUD timer bars alone
-// weren't enough). Each badge reuses the power-up's own baked pickup texture
-// (already loaded — see data/sprites.ts), scaled up and anchored near the
-// ship, so what you're carrying is legible without reading the corner HUD:
-// the shield badge is literally the shield icon as a bubble around the ship,
-// the magnet badge is the same horseshoe-with-pole-tips icon HowToPlay shows,
-// and the blaster badge is the same ray-gun icon, mounted beside the ship.
+// weren't enough). The shield badge uses a real forcefield-ring texture
+// (`shield-effect`, already sized to surround the ship — see data/sprites.ts)
+// rather than an enlarged copy of the pickup icon, and the magnet badge
+// reuses the same horseshoe-with-pole-tips icon HowToPlay shows. Sour
+// Blaster has no badge (removed 2026-09-08): the ship itself reskins while
+// it's active (powerUps.ts), which already answers "do I have the gun" more
+// directly than a floating icon beside it did.
 interface BadgeConfig {
   textureKey: string
   scale: number
@@ -23,9 +24,9 @@ interface BadgeConfig {
 
 const BADGE_CONFIG: Record<string, BadgeConfig> = {
   'sugar-shield': {
-    textureKey: 'sugar-shield',
-    scale: 2.2,
-    baseAlpha: 0.55,
+    textureKey: 'shield-effect',
+    scale: 1.1,
+    baseAlpha: 0.75,
     offsetX: 0,
     offsetY: 0,
     pulse: 'alpha',
@@ -35,14 +36,6 @@ const BADGE_CONFIG: Record<string, BadgeConfig> = {
     scale: 1.3,
     baseAlpha: 0.95,
     offsetX: -34,
-    offsetY: -32,
-    pulse: 'scale',
-  },
-  'sour-blaster': {
-    textureKey: 'sour-blaster',
-    scale: 1.3,
-    baseAlpha: 0.95,
-    offsetX: 34,
     offsetY: -32,
     pulse: 'scale',
   },

@@ -15,7 +15,10 @@ export interface BakedSprite {
 
 export type BakedSprites = Record<string, BakedSprite>
 
-function loadImage(src: string) {
+/** Exported for other one-off DOM bakes of a single sprite — see
+ * PlaySidePanels.tsx's heart icon, which doesn't need the full sprite set
+ * useBakedSprites bakes below. */
+export function loadImage(src: string) {
   return new Promise<HTMLImageElement>((resolve, reject) => {
     const image = new Image()
     image.onload = () => {

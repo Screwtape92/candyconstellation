@@ -17,12 +17,24 @@ Everything below this section was written assuming bespoke PixelLab-generated
 pixel art. **That is not what shipped.** The user supplied two Kenney CC0
 packs instead, and the MVP sprites were built from those:
 
-- `kenney_space-shooter-extension` — player ship, meteor, cloud/puff effect.
+- `kenney_space-shooter-extension` — meteor, cloud/puff effect.
 - `kenney_platformer-art-candy` — swirl lollipops, heart, chocolate waffle.
+- `kenney_space-shooter-remastered` — added 2026-09-08, a third pack: the
+  player ship (`playerShip1_red`, replacing the original extension-pack
+  ship), the Sour Blaster ship reskin (`enemyBlue3`, baked `rotate180` since
+  that pack's enemies face down by default — see `SpriteVisual.rotate180`),
+  the Sour Blaster pickup icon (`bold_silver`, a real Kenney filename typo —
+  tinted blue), the Sugar Shield pickup icon (`shield_gold`, tinted pink),
+  and the on-ship shield-bubble effect (`shield1` from that pack's Effects
+  folder — a real forcefield-ring graphic, not an enlarged copy of the
+  pickup icon). This replaced the shield/blaster procedural draw shapes from
+  2026-09-07 now that real art exists; `drawShield`/`drawBlasterIcon` were
+  removed from `spriteBaking.ts` as dead code (`drawStar`/`drawMagnet` stay —
+  still used by `candy-star`/`candy-magnet`).
 
-Both packs are committed at the repo root; the specific source PNGs used are
-copied into `public/assets/sprites/` as `src_<entity>.png`, alongside each
-pack's CC0 licence. **This is the current source of truth for art.** The
+Both original packs are committed at the repo root; the specific source PNGs
+used are copied into `public/assets/sprites/` as `src_<entity>.png`, alongside
+each pack's CC0 licence. **This is the current source of truth for art.** The
 PixelLab-flavoured detail below (export naming convention, per-state frame
 counts, the `manifest.json` the `sprite-import` skill validates) describes a
 pipeline that was never used, and is kept only as the record of what was
