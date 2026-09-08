@@ -39,8 +39,13 @@ const OBSTACLE_DESTROYED_TINT = 0xffe066
 // how far it rises (px) and how long it takes to rise + fade before being
 // destroyed. Minor juice, not a core balance number — throwaway placeholder
 // text in the same spirit as the rest of the current visual feedback.
-const POPUP_RISE_PX = 40
-const POPUP_DURATION_MS = 600
+// Font size doubled 2026-09-08 — playtest feedback: "way too small" against
+// a busy 720x960 canvas full of obstacles/candy at similar sizes. Rise
+// distance bumped to match — the old 40px barely cleared the bigger glyphs
+// before the popup started fading.
+const POPUP_FONT_SIZE = '40px'
+const POPUP_RISE_PX = 64
+const POPUP_DURATION_MS = 700
 
 type BurstAt = { x: number; y: number }
 type ScoredPickup = { value: number; x: number; y: number }
@@ -123,8 +128,14 @@ export class JuiceSystem {
     const popup = this.scene.add
       .text(x, y, `+${value}`, {
         fontFamily: 'monospace',
-        fontSize: '20px',
+        fontSize: POPUP_FONT_SIZE,
+        fontStyle: 'bold',
         color: POPUP_TINT,
+        // A stroke keeps this readable at the bigger size against a busy
+        // background — a plain fill alone got lost over similarly-bright
+        // candy/obstacle sprites.
+        stroke: '#3a1f4d',
+        strokeThickness: 5,
       })
       .setOrigin(0.5)
       .setDepth(101)

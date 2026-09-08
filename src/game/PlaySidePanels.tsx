@@ -122,10 +122,12 @@ function PowerUpTimers({ powerUps }: { powerUps: HudState['powerUps'] }) {
 
 function BlasterFlash() {
   return (
-    <p className="hud-flash text-center font-display text-2xl font-extrabold text-sky-candy">
+    <p className="hud-flash text-center font-display text-6xl leading-[1.05] font-extrabold text-sky-candy">
       SPACE
       <br />
-      TO SHOOT!
+      TO
+      <br />
+      SHOOT!
     </p>
   )
 }
