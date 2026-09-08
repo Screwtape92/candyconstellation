@@ -11,7 +11,13 @@ const SECTIONS = [
   { id: 'fest', label: 'FEST.WIN' },
 ]
 
-export function SiteNav({ onPlay }: { onPlay: () => void }) {
+export function SiteNav({
+  onPlay,
+  onBuildStory,
+}: {
+  onPlay: () => void
+  onBuildStory: () => void
+}) {
   return (
     <nav className="sticky top-0 z-20 flex items-center gap-5 border-b border-rim bg-[color-mix(in_srgb,var(--color-night-deep)_90%,transparent)] px-[clamp(1.25rem,4vw,3.5rem)] py-3 backdrop-blur-[10px]">
       <a
@@ -23,8 +29,16 @@ export function SiteNav({ onPlay }: { onPlay: () => void }) {
 
       <button
         type="button"
+        onClick={onBuildStory}
+        className="ml-auto cursor-pointer border-2 border-rim bg-panel px-5 py-1.5 font-display font-extrabold whitespace-nowrap text-cream shadow-[inset_-2px_-2px_0_rgba(0,0,0,0.35),inset_2px_2px_0_rgba(255,255,255,0.12)] transition-transform duration-100 hover:-translate-y-0.5 hover:border-taffy active:translate-y-0"
+      >
+        Build Log
+      </button>
+
+      <button
+        type="button"
         onClick={onPlay}
-        className="ml-auto cursor-pointer border-2 border-rim bg-bubblegum px-6 py-1.5 font-display font-extrabold text-night-deep shadow-[inset_-2px_-2px_0_rgba(0,0,0,0.35),inset_2px_2px_0_rgba(255,255,255,0.18)] transition-transform duration-100 hover:-translate-y-0.5 active:translate-y-0 active:shadow-[inset_2px_2px_0_rgba(0,0,0,0.35),inset_-2px_-2px_0_rgba(255,255,255,0.18)]"
+        className="cursor-pointer border-2 border-rim bg-bubblegum px-6 py-1.5 font-display font-extrabold text-night-deep shadow-[inset_-2px_-2px_0_rgba(0,0,0,0.35),inset_2px_2px_0_rgba(255,255,255,0.18)] transition-transform duration-100 hover:-translate-y-0.5 active:translate-y-0 active:shadow-[inset_2px_2px_0_rgba(0,0,0,0.35),inset_-2px_-2px_0_rgba(255,255,255,0.18)]"
       >
         Play
       </button>
@@ -74,7 +88,12 @@ export function SiteTaskbar() {
 
   useEffect(() => {
     const updateClock = () => {
-      setClock(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }))
+      setClock(
+        new Date().toLocaleTimeString([], {
+          hour: '2-digit',
+          minute: '2-digit',
+        }),
+      )
     }
     updateClock()
     const intervalId = window.setInterval(updateClock, 30_000)

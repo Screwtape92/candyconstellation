@@ -7,6 +7,7 @@ import {
   type GameOverPayload,
 } from './game/eventBus'
 import { PhaserGame } from './game/PhaserGame'
+import { BuildStory } from './pages/BuildStory'
 import { Landing } from './pages/Landing'
 import { Leaderboard } from './pages/Leaderboard'
 import { PostGame } from './pages/PostGame'
@@ -15,13 +16,14 @@ import { IntroSplash } from './site/IntroSplash'
 // React owns the shell and switches between screens with plain state — there's
 // one screen transitioning to another, not deep-linkable routes, so a router
 // would be unwarranted (docs/architecture.md "React ⇄ Phaser integration").
-type View = 'landing' | 'playing' | 'postgame' | 'leaderboard'
+type View = 'landing' | 'playing' | 'postgame' | 'leaderboard' | 'buildstory'
 
 // Landing scrolls a full page (the ale, the game, how to play, the board); the
 // other three are single-screen and want their content centered instead. One
 // shell, two layout modes, rather than every screen re-deciding its own outer
-// container.
-const SCROLLING_VIEWS: View[] = ['landing', 'leaderboard']
+// container. Build Story also scrolls a full page (docs/game-design.md-style
+// walkthrough content), so it joins Landing/Leaderboard here.
+const SCROLLING_VIEWS: View[] = ['landing', 'leaderboard', 'buildstory']
 
 function App() {
   const [view, setView] = useState<View>('landing')
@@ -66,7 +68,18 @@ function App() {
         scrolling ? '' : 'flex items-center justify-center overflow-hidden'
       }`}
     >
-      {view === 'landing' && <Landing onPlay={() => setView('playing')} />}
+      {view === 'landing' && (
+        <Landing
+          onPlay={() => setView('playing')}
+          onBuildStory={() => setView('buildstory')}
+        />
+      )}
+      {view === 'buildstory' && (
+        <BuildStory
+          onPlay={() => setView('playing')}
+          onBackToHome={() => setView('landing')}
+        />
+      )}
       {/* PhaserGame is mounted only while playing, so navigating away genuinely
           unmounts and destroys the Phaser.Game instance. */}
       {view === 'playing' && <PhaserGame />}

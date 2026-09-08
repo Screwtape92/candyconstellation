@@ -8,6 +8,7 @@ import { useBakedSprites } from '../site/useBakedSprites'
 
 interface LandingProps {
   onPlay: () => void
+  onBuildStory: () => void
 }
 
 // Pre-game screen (docs/game-design.md state machine: React "Landing" -> Phaser
@@ -17,12 +18,12 @@ interface LandingProps {
 // Sprites are baked once here and shared by both consumers below — the drifting
 // field behind the game section and the how-to-play legend — rather than each
 // re-decoding the same source PNGs.
-export function Landing({ onPlay }: LandingProps) {
+export function Landing({ onPlay, onBuildStory }: LandingProps) {
   const sprites = useBakedSprites()
 
   return (
     <div className="h-full w-full overflow-y-auto">
-      <SiteNav onPlay={onPlay} />
+      <SiteNav onPlay={onPlay} onBuildStory={onBuildStory} />
       <main>
         <AleHero />
         <GameIntro sprites={sprites} onPlay={onPlay} />
