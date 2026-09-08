@@ -6,8 +6,9 @@ import { Obstacle } from '../entities/Obstacle'
 import { Player } from '../entities/Player'
 import { PowerUp } from '../entities/PowerUp'
 import type { Projectile } from '../entities/Projectile'
+import { eventBus, HUD_UPDATE_EVENT } from '../eventBus'
 import { BlasterSystem, PROJECTILE_DAMAGE } from '../systems/BlasterSystem'
-import { HealthSystem } from '../systems/HealthSystem'
+import { HealthSystem, MAX_HEALTH } from '../systems/HealthSystem'
 import { JuiceSystem } from '../systems/JuiceSystem'
 import { ParallaxBackground } from '../systems/ParallaxBackground'
 import { PowerUpBadges } from '../systems/PowerUpBadges'
@@ -214,5 +215,17 @@ export class PlayScene extends Phaser.Scene {
     const activeTimers = this.powerUpSystem.activeTimers()
     this.powerUpHud.update(activeTimers)
     this.powerUpBadges.update(activeTimers.map((entry) => entry.id))
+
+    // Mirrors in-canvas state to the large side-panel readout either side of
+    // the portrait canvas (PlaySidePanels.tsx) — see eventBus.ts's
+    // HUD_UPDATE_EVENT doc comment for why this crosses every frame rather
+    // than only at GameOver like the rest of this file's Phaser->React
+    // surface. A small POJO, not a per-frame allocation concern.
+    eventBus.emit(HUD_UPDATE_EVENT, {
+      health: this.healthSystem.current,
+      maxHealth: MAX_HEALTH,
+      score: this.scoreSystem.current,
+      powerUps: activeTimers,
+    })
   }
 }

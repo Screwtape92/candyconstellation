@@ -83,12 +83,20 @@ export class PowerUpSystem {
   }
 
   // Generic to every timed power-up (docs/game-design.md "Active power-up
-  // readout"), not just Candy Magnet — PowerUpHud polls this each frame to
-  // draw one bar per currently-active id. remainingFraction is 1 at the
-  // moment of pickup/refresh and decays to 0 right as onExpire fires.
-  activeTimers(): Array<{ id: string; remainingFraction: number }> {
+  // readout"), not just Candy Magnet — PowerUpHud (and the side-panel status
+  // readout, PlaySidePanels.tsx) polls this each frame to draw one entry per
+  // currently-active id. remainingFraction is 1 at the moment of
+  // pickup/refresh and decays to 0 right as onExpire fires. label is read
+  // back off the def here (not re-looked-up by every caller) so there's one
+  // place that maps an id to its display name.
+  activeTimers(): Array<{
+    id: string
+    label: string
+    remainingFraction: number
+  }> {
     return [...this.timers.entries()].map(([id, timer]) => ({
       id,
+      label: powerUps.find((def) => def.id === id)?.label ?? id,
       remainingFraction: 1 - timer.getProgress(),
     }))
   }

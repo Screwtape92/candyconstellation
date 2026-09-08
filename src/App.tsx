@@ -7,6 +7,7 @@ import {
   type GameOverPayload,
 } from './game/eventBus'
 import { PhaserGame } from './game/PhaserGame'
+import { PlaySidePanels } from './game/PlaySidePanels'
 import { BuildStory } from './pages/BuildStory'
 import { Landing } from './pages/Landing'
 import { Leaderboard } from './pages/Leaderboard'
@@ -81,8 +82,15 @@ function App() {
         />
       )}
       {/* PhaserGame is mounted only while playing, so navigating away genuinely
-          unmounts and destroys the Phaser.Game instance. */}
-      {view === 'playing' && <PhaserGame />}
+          unmounts and destroys the Phaser.Game instance. PlaySidePanels adds
+          the large status readout in the open space either side of the
+          portrait canvas on wide-enough windows (docs/architecture.md "React
+          ⇄ Phaser integration"). */}
+      {view === 'playing' && (
+        <PlaySidePanels>
+          <PhaserGame />
+        </PlaySidePanels>
+      )}
       {view === 'postgame' && lastRun && (
         <PostGame run={lastRun} onSubmitted={() => setView('leaderboard')} />
       )}

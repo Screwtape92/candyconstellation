@@ -1,4 +1,5 @@
 import type { Player } from '../entities/Player'
+import { BLASTER_READY_EVENT, eventBus } from '../eventBus'
 
 // Generic timed-effect power-up shape (see docs/game-design.md "Power-ups").
 // Adding a power-up is adding a row here, never new systems code — PowerUpSystem
@@ -89,7 +90,12 @@ export const powerUps: PowerUpDef[] = [
   // docs/game-design.md "Power-ups" for why this one isn't "just a data row"
   // the way every other row in this file is. `blasterPickedUp` drives the
   // one-time fire-key hint (docs/game-design.md "Onboarding") — emitted only
-  // on apply, not on every frame the flag happens to be true.
+  // on apply, not on every frame the flag happens to be true. Also emits
+  // BLASTER_READY_EVENT across the Phaser->React boundary (see eventBus.ts)
+  // on every pickup (not just the first) so the large side-panel "SPACE TO
+  // SHOOT!" flash (docs/game-design.md, playtest feedback 2026-09-08) fires
+  // each time — distinct from the in-canvas hint, which is deliberately
+  // once-per-session.
   {
     id: 'sour-blaster',
     label: 'Sour Blaster',
@@ -98,6 +104,7 @@ export const powerUps: PowerUpDef[] = [
     onApply: (player) => {
       player.blasterActive = true
       player.scene.events.emit('blasterPickedUp')
+      eventBus.emit(BLASTER_READY_EVENT)
     },
     onExpire: (player) => {
       player.blasterActive = false

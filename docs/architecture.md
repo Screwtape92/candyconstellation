@@ -95,10 +95,31 @@ score submission/leaderboard) screens. A `<PhaserGame>` component creates the
   the phantom unmount from a real one. On a genuine unmount (navigating away
   from the game route), the instance is destroyed exactly once.
 
-In-game HUD (health, score, active power-up) stays inside Phaser — it's
-tightly coupled to the render loop. Only the GameOver transition crosses back
-to React, via a small EventBus: `{ score, elapsedSec }`. React then drives
-score submission and the leaderboard UI.
+**Superseded 2026-09-08.** The in-canvas HUD (health/score text, the
+power-up timer bars, the on-ship badges) is still entirely inside Phaser —
+that part of the original decision holds. What changed: the portrait canvas
+(GAME_WIDTH×GAME_HEIGHT = 720×960) doesn't fill a wide desktop viewport, and
+playtest feedback wanted a large, unmissable status readout in that open
+space either side of it — `PlaySidePanels.tsx`, mirrored on both sides.
+That's DOM/React, not Phaser, so it needs a live read of health/score/active
+power-ups every frame, not just the one-time GameOver payload. The crossing
+(`src/game/eventBus.ts`) now carries two kinds of event on one
+`Phaser.Events.EventEmitter`, still one-directional (Phaser emits, React only
+listens):
+
+- `GAME_OVER_EVENT` — one-time-per-run, unchanged: `{ score, elapsedSec }`,
+  driving score submission and the leaderboard UI.
+- `HUD_UPDATE_EVENT` — every frame, from `PlayScene.update()`: `{ health,
+  maxHealth, score, powerUps }`. A small POJO each frame is not the kind of
+  per-frame allocation this doc's performance budget is about (see below) —
+  that budget targets particle/object churn during busy gameplay, not one
+  small object read by a React subscriber.
+- `BLASTER_READY_EVENT` — once per Sour Blaster pickup (not just the first),
+  driving the side panels' flashing "SPACE TO SHOOT!" prompt. Distinct from
+  the in-canvas one-time fire-key hint (`BlasterSystem.ts`), which stays
+  once-per-session on purpose — the two serve different audiences (a
+  returning player doesn't need the in-canvas explainer again, but the
+  large flash is worth repeating every time the weapon comes back).
 
 ## Engine patterns: events, triggers, and collision
 
@@ -112,7 +133,9 @@ invent their own version.
   listens for `candyCollected`. Don't reach for a new pub/sub library, and
   don't have systems call each other's methods directly — that couples them
   and defeats the point of separate systems. This is distinct from the
-  EventBus above, which only crosses the Phaser→React boundary at GameOver.
+  EventBus above, which exists solely to cross the Phaser→React boundary
+  (GameOver, and since 2026-09-08 the live HUD/blaster-ready crossing too) —
+  it never carries system-to-system signaling that stays inside a scene.
 - **Timed/duration triggers**: power-up expiry, the invulnerability window,
   and spawn-interval scheduling all use Phaser's Time/Clock API
   (`scene.time.delayedCall`, `scene.time.addEvent`) — not a hand-rolled

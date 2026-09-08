@@ -1,7 +1,5 @@
 import Phaser from 'phaser'
 
-import { powerUps } from '../data/powerUps'
-
 // Layout — top-right corner (2026-09-07: moved off the top-left, which
 // stacked directly under Health/Score and sat in a stretch of screen the
 // player's fully-free-roaming ship can fly through, reading as the bars
@@ -39,9 +37,6 @@ const HUD_COLOR: Record<string, number> = {
 }
 const DEFAULT_COLOR = 0x8be9fd
 
-const labelFor = (id: string) =>
-  powerUps.find((def) => def.id === id)?.label ?? id
-
 interface HudRow {
   bg: Phaser.GameObjects.Rectangle
   fill: Phaser.GameObjects.Rectangle
@@ -62,7 +57,9 @@ export class PowerUpHud {
     this.scene = scene
   }
 
-  update(active: Array<{ id: string; remainingFraction: number }>) {
+  update(
+    active: Array<{ id: string; label: string; remainingFraction: number }>,
+  ) {
     const activeIds = new Set(active.map((entry) => entry.id))
     for (const [id, row] of this.rows) {
       if (!activeIds.has(id)) {
@@ -76,7 +73,7 @@ export class PowerUpHud {
     active.forEach((entry, index) => {
       let row = this.rows.get(entry.id)
       if (!row) {
-        row = this.createRow(entry.id)
+        row = this.createRow(entry.id, entry.label)
         this.rows.set(entry.id, row)
       }
       this.reposition(row, index)
@@ -84,10 +81,10 @@ export class PowerUpHud {
     })
   }
 
-  private createRow(id: string): HudRow {
+  private createRow(id: string, label: string): HudRow {
     const color = HUD_COLOR[id] ?? DEFAULT_COLOR
-    const label = this.scene.add
-      .text(0, 0, labelFor(id), {
+    const labelText = this.scene.add
+      .text(0, 0, label, {
         fontFamily: 'monospace',
         fontSize: '13px',
         color: '#ffffff',
@@ -102,7 +99,7 @@ export class PowerUpHud {
       .rectangle(0, 0, BAR_WIDTH, BAR_HEIGHT, color, 0.9)
       .setOrigin(0, 0.5)
       .setDepth(HUD_DEPTH + 1)
-    return { bg, fill, label }
+    return { bg, fill, label: labelText }
   }
 
   private reposition(row: HudRow, index: number) {
