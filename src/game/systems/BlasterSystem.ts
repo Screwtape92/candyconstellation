@@ -10,6 +10,14 @@ export const FIRE_COOLDOWN_MS = 250
 export const PROJECTILE_SPEED = 700
 export const PROJECTILE_DAMAGE = 1
 
+// User-supplied loop (docs/game-design.md "Audio spec"), not a one-shot cue
+// per projectile — played for as long as the fire key is actually held,
+// independent of the cooldown-gated projectile spawn rate below. This is
+// what a "rapid fire" sound is for: it reads as one continuous stream, not
+// FIRE_COOLDOWN_MS-spaced individual triggers.
+const LASER_LOOP_KEY = 'blaster-fire-loop'
+const LASER_LOOP_VOLUME = 0.5
+
 const FIRE_HINT_TEXT = 'SPACE'
 const FIRE_HINT_RISE_PX = 40
 const FIRE_HINT_DURATION_MS = 2200
@@ -31,6 +39,7 @@ export class BlasterSystem {
   private readonly player: Player
   private readonly projectiles: Phaser.Physics.Arcade.Group
   private readonly fireKey: Phaser.Input.Keyboard.Key
+  private readonly laserLoop: Phaser.Sound.BaseSound
   private lastFiredAt = -Infinity
 
   constructor(
@@ -51,14 +60,23 @@ export class BlasterSystem {
     // every shot (docs/game-design.md "Controls").
     this.fireKey = keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE)
 
+    this.laserLoop = scene.sound.add(LASER_LOOP_KEY, {
+      loop: true,
+      volume: LASER_LOOP_VOLUME,
+    })
+
     scene.events.on('blasterPickedUp', this.showFireHintOnce, this)
     scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       scene.events.off('blasterPickedUp', this.showFireHintOnce, this)
+      this.laserLoop.stop()
     })
   }
 
   update() {
-    if (!this.player.blasterActive || !this.fireKey.isDown) {
+    const firing = this.player.blasterActive && this.fireKey.isDown
+    this.updateLaserLoop(firing)
+
+    if (!firing) {
       return
     }
     const now = this.scene.time.now
@@ -67,6 +85,17 @@ export class BlasterSystem {
     }
     this.lastFiredAt = now
     this.fire()
+  }
+
+  // The loop tracks "is the fire key actually held right now", not the
+  // cooldown-gated projectile spawn — it should sound continuous even
+  // though projectiles only spawn every FIRE_COOLDOWN_MS.
+  private updateLaserLoop(firing: boolean) {
+    if (firing && !this.laserLoop.isPlaying) {
+      this.laserLoop.play()
+    } else if (!firing && this.laserLoop.isPlaying) {
+      this.laserLoop.stop()
+    }
   }
 
   private fire() {

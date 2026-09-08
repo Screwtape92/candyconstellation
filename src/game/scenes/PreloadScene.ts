@@ -1,6 +1,7 @@
 import Phaser from 'phaser'
 
 import { GAME_HEIGHT, GAME_WIDTH } from '../config'
+import { audioCues, audioSourceUrl } from '../data/audioCues'
 import { PARTICLE_TEXTURE_KEY } from '../systems/JuiceSystem'
 import {
   BG_FAR_TEXTURE_KEY,
@@ -28,6 +29,10 @@ export class PreloadScene extends Phaser.Scene {
     // before a TileSprite needs to wrap (see scripts/optimize-backgrounds.mjs).
     this.load.image(BG_FAR_TEXTURE_KEY, '/assets/backgrounds/space-far.webp')
     this.load.image(BG_NEAR_TEXTURE_KEY, '/assets/backgrounds/space-near.webp')
+    // Being built up one cue at a time (docs/game-design.md "Audio spec").
+    for (const cue of audioCues) {
+      this.load.audio(cue.key, audioSourceUrl(cue.file))
+    }
   }
 
   // Async because baking round-trips each sprite through an image decode (see
