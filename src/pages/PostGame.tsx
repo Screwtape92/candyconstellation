@@ -58,6 +58,10 @@ export function PostGame({ run, onSubmitted }: PostGameProps) {
         maxLength={MAX_NAME_LENGTH}
         placeholder="Enter your name"
         autoFocus
+        spellCheck={false}
+        autoCorrect="off"
+        autoCapitalize="off"
+        autoComplete="off"
         className="w-72 border-2 border-rim bg-panel px-4 py-2 text-center text-lg text-cream shadow-[inset_1px_1px_0_rgba(0,0,0,0.35),inset_-1px_-1px_0_rgba(255,255,255,0.1)] outline-none focus:border-taffy"
       />
       <button

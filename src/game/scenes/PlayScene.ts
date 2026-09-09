@@ -203,12 +203,22 @@ export class PlayScene extends Phaser.Scene {
     // instead of cutting to a blank scene (classic-arcade "everything freezes,
     // GAME OVER slams on screen"). pause() halts this scene's update loop,
     // which also freezes its Arcade Physics world and Tweens/Time systems, so
-    // nothing keeps drifting behind the overlay. No stop+start cleanup needed
-    // here the way the old comment warned: React destroys the whole
-    // Phaser.Game the instant GameOverScene hands off to it (PhaserGame.tsx
-    // unmounts on the eventBus emit), so there's nothing left for a leaked
-    // listener/timer to leak into.
+    // nothing keeps drifting behind the overlay.
+    //
+    // clearCaptures() releases Player/BlasterSystem's WASD/arrow/SPACE key
+    // captures (addKeys/addKey default to enableCapture: true, which calls
+    // preventDefault() on those keydowns at the document level) right here,
+    // synchronously — deliberately not left for Phaser.Game's eventual
+    // destroy() to release. React unmounting PhaserGame and destroying the
+    // game instance happens in a *passive* effect, which React defers until
+    // after paint; the post-game name input's autoFocus happens synchronously
+    // in the same commit that mounts it. That gap is enough for a keystroke
+    // landing right as the screen changes to still hit the old capture and
+    // get silently eaten (W/A/S/D/Space never reaching the name field) —
+    // releasing captures here, well before the React transition even starts,
+    // closes that window entirely rather than racing it.
     this.events.once('gameOver', () => {
+      this.input.keyboard?.clearCaptures()
       this.scene.pause()
       this.scene.launch('GameOverScene', {
         score: this.scoreSystem.current,

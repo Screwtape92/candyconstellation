@@ -30,3 +30,7 @@ dist-ssr
 # Self-hosted (home box + ngrok) deployment's SQLite database - machine-local
 # state, never checked in (docs/architecture.md "Self-hosted deployment").
 /data/
+
+# Playwright MCP's own debugging output (screenshots, console logs) from
+# browser-driven test sessions - tool scratch, not project source.
+/.playwright-mcp/

@@ -30,6 +30,24 @@ function contentType(filePath: string): string {
   )
 }
 
+// Vite content-hashes its own build output (e.g. index-C3gfwz3d.js) — a
+// changed file gets a new filename, so these can be cached forever. Files
+// copied verbatim from public/ (audio, images, sprites, favicon) keep their
+// original names, so caching those long-term risks serving stale content if
+// one is ever swapped out without a filename change — a short cache is the
+// safe middle ground for those instead.
+const HASHED_ASSET_RE = /-[0-9A-Za-z_]{8}\.(js|css)$/
+
+function cacheControl(filePath: string): string {
+  if (HASHED_ASSET_RE.test(path.basename(filePath))) {
+    return 'public, max-age=31536000, immutable'
+  }
+  if (path.basename(filePath) === 'index.html') {
+    return 'no-cache'
+  }
+  return 'public, max-age=3600'
+}
+
 export function serveStatic(
   req: IncomingMessage,
   res: ServerResponse,
@@ -60,6 +78,9 @@ export function serveStatic(
     return
   }
 
-  res.writeHead(200, { 'Content-Type': contentType(candidate) })
+  res.writeHead(200, {
+    'Content-Type': contentType(candidate),
+    'Cache-Control': cacheControl(candidate),
+  })
   createReadStream(candidate).pipe(res)
 }

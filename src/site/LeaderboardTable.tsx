@@ -52,7 +52,7 @@ export function LeaderboardTable({
         </p>
       )}
       <div className="overflow-x-auto border-2 border-rim">
-        <table className="w-full min-w-[480px] border-collapse">
+        <table className="w-full min-w-[480px] table-fixed border-collapse">
           {caption && (
             <caption className="border-b border-rim bg-panel-hi px-6 py-3 text-left font-mono text-[0.6875rem] tracking-[0.16em] text-dim">
               {caption}
@@ -63,13 +63,13 @@ export function LeaderboardTable({
               <th scope="col" className="w-18 text-left">
                 #
               </th>
-              <th scope="col" className="text-left">
+              <th scope="col" className="w-full text-left">
                 Name
               </th>
-              <th scope="col" className="text-right">
+              <th scope="col" className="w-28 text-right">
                 Survived
               </th>
-              <th scope="col" className="text-right">
+              <th scope="col" className="w-24 text-right">
                 Score
               </th>
             </tr>
@@ -91,7 +91,7 @@ export function LeaderboardTable({
                 >
                   {String(index + 1).padStart(2, '0')}
                 </td>
-                <td className="max-w-0 truncate px-6 py-3 font-bold text-cream">
+                <td className="truncate px-6 py-3 font-bold text-cream">
                   {entry.playerName}
                 </td>
                 <td className="px-6 py-3 text-right font-mono tabular-nums text-dim">

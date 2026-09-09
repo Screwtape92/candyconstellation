@@ -20,7 +20,7 @@ export function Leaderboard({ onPlayAgain, onBackToHome }: LeaderboardProps) {
         Leaderboard
       </h1>
 
-      <div className="w-full max-w-lg text-left">
+      <div className="w-full max-w-2xl text-left">
         <LeaderboardTable entries={entries} staleRefresh={staleRefresh} />
       </div>
 
