@@ -23,6 +23,8 @@ interface GameOverData {
   score?: number
   elapsedSec?: number
   runToken?: string | null
+  candyPoints?: number
+  killPoints?: number
 }
 
 // Launched (not started) on top of PlayScene, which is paused rather than
@@ -74,6 +76,8 @@ export class GameOverScene extends Phaser.Scene {
         score: data.score ?? 0,
         elapsedSec: data.elapsedSec ?? 0,
         runToken: data.runToken ?? null,
+        candyPoints: data.candyPoints ?? 0,
+        killPoints: data.killPoints ?? 0,
       })
     })
   }

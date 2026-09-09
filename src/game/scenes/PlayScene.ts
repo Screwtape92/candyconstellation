@@ -237,6 +237,8 @@ export class PlayScene extends Phaser.Scene {
         score: this.scoreSystem.current,
         elapsedSec: this.scoreSystem.elapsedSec,
         runToken: this.runToken,
+        candyPoints: this.scoreSystem.candyPoints,
+        killPoints: this.scoreSystem.killPoints,
       })
     })
   }

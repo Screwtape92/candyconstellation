@@ -20,6 +20,12 @@ export interface ScoreSubmission {
   // never resolved — such a submission gets rejected by the server (422)
   // rather than silently skipping verification for it.
   runToken: string | null
+  // Score decomposition check (docs/game-design.md "Score decomposition
+  // check"): ScoreSystem's own candy/kill tallies, required server-side
+  // alongside score/elapsedSec so the total can be exactly reconstructed
+  // rather than merely judged plausible.
+  candyPoints: number
+  killPoints: number
 }
 
 export async function submitScore(submission: ScoreSubmission): Promise<void> {

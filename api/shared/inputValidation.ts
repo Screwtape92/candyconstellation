@@ -29,6 +29,8 @@ export interface SubmissionInput {
   elapsedSec: number
   submissionGuid: string
   runToken: string
+  candyPoints: number
+  killPoints: number
 }
 
 export type ValidationResult =
@@ -61,7 +63,8 @@ export function validateSubmission(body: unknown): ValidationResult {
     return { ok: false, error: 'Request body must be a JSON object.' }
   }
 
-  const { name, score, elapsedSec, submissionGuid } = body
+  const { name, score, elapsedSec, submissionGuid, candyPoints, killPoints } =
+    body
 
   if (typeof name !== 'string') {
     return { ok: false, error: 'name is required and must be a string.' }
@@ -114,6 +117,26 @@ export function validateSubmission(body: unknown): ValidationResult {
     return { ok: false, error: 'runToken must be a valid token.' }
   }
 
+  // Score decomposition check (docs/game-design.md "Score decomposition
+  // check"): only basic shape validated here (a non-negative integer) — the
+  // denomination/subset-sum and exact-reconciliation checks against score
+  // and elapsedSec live in scoreDecomposition.ts, alongside submitScore's
+  // other anti-cheat checks, not in this shape-only validation layer.
+  if (
+    typeof candyPoints !== 'number' ||
+    !Number.isInteger(candyPoints) ||
+    candyPoints < 0
+  ) {
+    return { ok: false, error: 'candyPoints must be a non-negative integer.' }
+  }
+  if (
+    typeof killPoints !== 'number' ||
+    !Number.isInteger(killPoints) ||
+    killPoints < 0
+  ) {
+    return { ok: false, error: 'killPoints must be a non-negative integer.' }
+  }
+
   return {
     ok: true,
     value: {
@@ -122,6 +145,8 @@ export function validateSubmission(body: unknown): ValidationResult {
       elapsedSec,
       submissionGuid,
       runToken,
+      candyPoints,
+      killPoints,
     },
   }
 }

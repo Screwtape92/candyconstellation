@@ -39,6 +39,8 @@ export function PostGame({ run, onSubmitted }: PostGameProps) {
       // against the *original* run's start time, not a freshly-issued one
       // (which would always be too new to satisfy the check).
       runToken: run.runToken,
+      candyPoints: run.candyPoints,
+      killPoints: run.killPoints,
     }
     void submitScore(submission).catch((err) => {
       console.error('submitScore failed', err)

@@ -321,10 +321,10 @@ before this fix.
 
 No sign-in step. At GameOver, the player types a free-text name in the
 post-game screen; `submitScore` is called directly with
-`{ name, score, elapsedSec, submissionGuid, runToken }` — no bearer token or
-identity to validate (`runToken` below is a run-scoped anti-cheat proof, not
-an identity), no consent/fallback logic (there's no primary auth path to
-fall back from).
+`{ name, score, elapsedSec, submissionGuid, runToken, candyPoints,
+killPoints }` — no bearer token or identity to validate (`runToken` below is
+a run-scoped anti-cheat proof, not an identity), no consent/fallback logic
+(there's no primary auth path to fall back from).
 
 - `submitScore` validates and sanitizes `name` server-side (see Input
   validation above) and checks `score`/`elapsedSec` against the anti-cheat
@@ -343,6 +343,15 @@ fall back from).
   ("a lightweight per-session proof token issued at game start and required
   at submit time") — it stopped being hypothetical once exactly the gap it
   describes got exploited live.
+- **Score decomposition check — same date.** A narrower gap the run-token
+  check doesn't close: even with `elapsedSec` tied to real time, `score`
+  could still be any number under the plausibility ceiling for that
+  duration. `candyPoints`/`killPoints` (see `docs/game-design.md` "Score
+  decomposition check") are now required alongside it, and `submitScore`
+  verifies the total is *exactly* reconstructible from those — every
+  collectible/kill value in the game is a fixed, known constant, so this
+  can't be satisfied by picking a plausible-looking number, only by
+  reverse-engineering the actual scoring internals.
 - **Rate-limiting (judgment call, flagging for review, not yet signed off):**
   this is a standalone public web link, not a bounded venue/timeframe event —
   there's no fixed attendee count and no closing time, so an unrated

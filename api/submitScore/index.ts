@@ -12,6 +12,11 @@ import {
 import { validateSubmission } from '../shared/inputValidation'
 import { isPlausibleScore } from '../shared/antiCheat'
 import { isValidRunDuration } from '../shared/runToken'
+import {
+  isConsistentScore,
+  isValidCandyPoints,
+  isValidKillPoints,
+} from '../shared/scoreDecomposition'
 import { buildRowKey } from '../shared/scoreKey'
 import { incrementAndCheckRateLimit } from '../shared/rateLimit'
 import { consumeRunToken } from '../shared/runTokenStore'
@@ -37,8 +42,15 @@ export async function submitScore(
   if (!validation.ok) {
     return { status: 400, jsonBody: { error: validation.error } }
   }
-  const { name, score, elapsedSec, submissionGuid, runToken } =
-    validation.value
+  const {
+    name,
+    score,
+    elapsedSec,
+    submissionGuid,
+    runToken,
+    candyPoints,
+    killPoints,
+  } = validation.value
 
   // Per-IP rate limit (docs/architecture.md "Rate-limiting"): increment the
   // caller's bucket and reject before the anti-cheat check or the Scores write.
@@ -84,6 +96,24 @@ export async function submitScore(
     return {
       status: 500,
       jsonBody: { error: 'Failed to record score. Please retry.' },
+    }
+  }
+
+  // Score decomposition check (docs/game-design.md "Score decomposition
+  // check"): the total must be exactly reconstructible from a real
+  // survival/candy/kill breakdown, not merely under the ratio ceiling below —
+  // a fabricated total can only satisfy this by reverse-engineering the
+  // game's actual scoring rules, not by picking anything plausible-looking.
+  if (
+    !isValidCandyPoints(candyPoints) ||
+    !isValidKillPoints(killPoints) ||
+    !isConsistentScore(score, elapsedSec, candyPoints, killPoints)
+  ) {
+    return {
+      status: 422,
+      jsonBody: {
+        error: 'Score is not plausible for the reported run length.',
+      },
     }
   }
 

@@ -22,6 +22,12 @@ export interface GameOverPayload {
   // src/api-client/startRun.ts) — submitScore will reject a submission with
   // no token rather than silently skip verification for it.
   runToken: string | null
+  // Score decomposition check (docs/game-design.md "Score decomposition
+  // check"): ScoreSystem's own running tallies, reported alongside the total
+  // so submitScore can verify score is exactly reconstructible from a real
+  // survival/candy/kill breakdown, not just plausible in aggregate.
+  candyPoints: number
+  killPoints: number
 }
 
 export const GAME_OVER_EVENT = 'gameOver'

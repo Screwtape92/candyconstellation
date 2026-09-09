@@ -539,6 +539,52 @@ path — hasn't been live-tested against real Table Storage tonight (the
 subscription is still `Disabled`; see `docs/architecture.md` "Self-hosted
 deployment").
 
+## Score decomposition check
+
+**Added 2026-09-09, live at the beerfest event**, closing a narrower residual
+gap the run-token check above doesn't: even with `elapsedSec` now tied to
+real time, a submission could still fabricate a `score` that merely sits
+under the plausibility ceiling for that duration — indistinguishable from a
+genuinely great run by ratio alone. This check instead requires the total to
+be *exactly* reconstructible from the game's real, discrete scoring rules,
+not just plausible:
+
+```
+score = floor(survivalPointsPerSec * elapsedSec) + candyPoints + killPoints
+```
+
+(`ScoreSystem.ts`'s actual `current` getter — floor(A + integer) = floor(A) +
+integer lets the survival term be floored on its own here.) Every
+collectible is worth exactly `COLLECTIBLE_VALUE` (50) and every obstacle kill
+one of three fixed values (30/60/100, `spawnTable.ts`) — all multiples of
+10 — so a genuine score's "active" component (`score` minus the survival
+floor) is always exactly reconstructible from those denominations. A
+fabricated number can only satisfy this by reverse-engineering the actual
+scoring internals (which values, which floor semantics), not by picking
+anything that merely looks plausible — a materially higher bar than any
+attack actually observed tonight.
+
+- `PlayScene`/`ScoreSystem` now report `candyPoints`/`killPoints` (the
+  running tallies already tracked internally) alongside `score`/`elapsedSec`/
+  `runToken`, riding the same GameOver → `submitScore` path.
+- `submitScore` checks, in order: `candyPoints` is a non-negative multiple of
+  50; `killPoints` is reachable as a non-negative combination of {30, 60,
+  100} (a single small loop suffices — 60 is a multiple of 30, so only the
+  jawbreaker (100) count needs enumerating, see
+  `api/shared/scoreDecomposition.ts`); and the reconciliation formula above
+  holds exactly. Any failure gets the same rejection message as every other
+  anti-cheat check, for the same reason: no benefit to an attacker in
+  learning which specific rule caught them.
+- This check is additive to, not a replacement for, the plausibility ratio
+  and run-token checks above — all three must pass.
+- Retroactively audited the 87 pre-existing entries against this formula
+  (without it being enforced at submission time, since it didn't exist yet):
+  zero violated it, including all three of Kian's runs — see the "is Kian's
+  score legitimate" conversation this same night for the full walkthrough.
+  That's reassuring but not proof on its own for anything submitted before
+  this check went live; going forward, it's an enforced gate, not just an
+  audit.
+
 ## Audio spec
 
 **Being built up incrementally from 2026-09-08**, one real user-supplied cue

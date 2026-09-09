@@ -55,6 +55,17 @@ export class ScoreSystem {
     return (this.scene.time.now - this.scene.time.startTime) / 1000
   }
 
+  // Public: read at GameOver alongside score/elapsedSec so submitScore can
+  // report the exact survival/candy/kill breakdown, not just the total
+  // (docs/game-design.md "Score decomposition check").
+  get candyPoints(): number {
+    return this.candyTally
+  }
+
+  get killPoints(): number {
+    return this.killTally
+  }
+
   get current(): number {
     return Math.floor(
       SURVIVAL_POINTS_PER_SEC * this.elapsedSec +

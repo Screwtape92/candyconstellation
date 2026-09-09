@@ -19,7 +19,9 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 // Mirrors SURVIVAL_POINTS_PER_SEC in src/game/systems/ScoreSystem.ts.
-const SURVIVAL_POINTS_PER_SEC = 2
+// Exported for scoreDecomposition.ts, which needs the exact same value —
+// see that file for why.
+export const SURVIVAL_POINTS_PER_SEC = 2
 
 // Mirrors src/game/data/spawnTable.ts: the three collectible rows carry weight
 // 10 each (combined 30) within the full table's total weight of 138 (obstacles
@@ -28,7 +30,9 @@ const COLLECTIBLE_WEIGHT = 30
 const TOTAL_SPAWN_WEIGHT = 138
 
 // Mirrors `value: 50` on every collectible row in src/game/data/spawnTable.ts.
-const COLLECTIBLE_VALUE = 50
+// Exported for scoreDecomposition.ts — same reason as SURVIVAL_POINTS_PER_SEC
+// above.
+export const COLLECTIBLE_VALUE = 50
 
 // Mirrors spawnBaseMs / spawnRampCoeff in src/game/systems/DifficultyCurve.ts,
 // which feed spawnIntervalMs(t) = spawnBaseMs / (1 + spawnRampCoeff * sqrt(t)).
