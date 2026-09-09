@@ -415,6 +415,28 @@ fallback beyond `/` itself.
   two JSON endpoints plus static files) serves the Vite production build
   (`dist/`) and the two API routes from one port (default `8787`, override
   with `PORT`). No CORS needed — same origin, same process.
+- **`submitScore` request body cap — added 2026-09-09, live at the beerfest
+  event.** `server/api.ts`'s `readBody` reads the whole POST body into memory
+  before `JSON.parse` can run at all — Express-based servers get a body-size
+  limit for free from `body-parser`, but plain `node:http` doesn't, and there
+  was no cap here. A single unauthenticated request with an arbitrarily large
+  body (real payload is a few hundred bytes at most: a name, two numbers, a
+  GUID) could exhaust the VM's memory before validation or rate-limiting ever
+  ran — one request, no auth, whole event down. Fixed with a 4096-byte cap,
+  checked against `Content-Length` up front and against actual bytes received
+  as they stream in (the header is attacker-controlled and can be absent or
+  wrong, so the streaming check is what actually bounds memory). Verified: a
+  500MB POST is rejected with 413 while server RSS stays flat. The 413 has to
+  be written to the response *before* the socket is torn down — destroying
+  `req` immediately (the first version of this fix) also kills `res`, since
+  they share one socket, so the client sees a broken connection instead of a
+  clean error.
+- **Static-file path check hardened — same date.** `serveStatic` verified a
+  requested path couldn't escape `dist/` with `requestedPath.startsWith(distDir)`
+  — a bare prefix check with no separator boundary, the classic bug where a
+  sibling directory sharing the same string prefix (e.g. `dist-evil/`) would
+  also pass. Not exploitable today (no such sibling exists), but corrected to
+  require an exact match or `distDir + path.sep` as the prefix regardless.
 - **Shared logic, not duplicated**: `validateSubmission` (`inputValidation.ts`)
   and `isPlausibleScore` (`antiCheat.ts`) are imported directly from
   `api/shared/` — those two modules have zero Azure-specific imports, so

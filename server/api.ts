@@ -10,13 +10,48 @@ import { insertScore, topScores } from './scores.js'
 // instead of Table Storage. See docs/architecture.md "Self-hosted
 // deployment (home box + ngrok)".
 
+// Generous over the real payload (name <=24 chars, a couple of numbers, a
+// 36-char GUID — a few hundred bytes as JSON at most). Without a cap, a
+// single POST with an arbitrarily large body gets buffered into memory in
+// full before validation ever runs (JSON.parse needs the whole string) —
+// an unauthenticated, one-request memory-exhaustion DoS. Added 2026-09-09.
+const MAX_BODY_BYTES = 4096
+
+class PayloadTooLargeError extends Error {}
+
+// Destroying `req` the moment the cap is exceeded also kills `res` (same
+// underlying socket), so the caller's 413 response never actually reaches
+// the client — it just sees a broken connection instead of a clean error.
+// So this only ever rejects; the caller writes the response first and only
+// then closes the socket (see handleSubmitScore's catch below).
 function readBody(req: IncomingMessage): Promise<string> {
   return new Promise((resolve, reject) => {
+    const contentLength = Number(req.headers['content-length'])
+    if (Number.isFinite(contentLength) && contentLength > MAX_BODY_BYTES) {
+      reject(new PayloadTooLargeError('Request body too large.'))
+      return
+    }
+
     let body = ''
+    let bytes = 0
+    let rejected = false
+
     req.on('data', (chunk: Buffer) => {
+      if (rejected) return
+      bytes += chunk.length
+      // Content-Length is attacker-supplied and can be absent (chunked
+      // transfer) or understated, so this streaming check — not the one
+      // above — is what actually bounds memory use.
+      if (bytes > MAX_BODY_BYTES) {
+        rejected = true
+        reject(new PayloadTooLargeError('Request body too large.'))
+        return
+      }
       body += chunk.toString('utf8')
     })
-    req.on('end', () => resolve(body))
+    req.on('end', () => {
+      if (!rejected) resolve(body)
+    })
     req.on('error', reject)
   })
 }
@@ -35,7 +70,15 @@ export async function handleSubmitScore(
   try {
     const raw = await readBody(req)
     body = JSON.parse(raw)
-  } catch {
+  } catch (err) {
+    if (err instanceof PayloadTooLargeError) {
+      sendJson(res, 413, { error: 'Request body too large.' })
+      // Written after the response, not before (see readBody) — this stops
+      // the rest of an oversized upload rather than leaving the connection
+      // to keep receiving data nothing further will do anything with.
+      res.socket?.destroy()
+      return
+    }
     sendJson(res, 400, { error: 'Request body must be valid JSON.' })
     return
   }

@@ -56,11 +56,17 @@ export function serveStatic(
   const url = new URL(req.url ?? '/', 'http://localhost')
   // Reject any path that could escape distDir (../, encoded traversal, etc.)
   // by resolving it and checking the result is still inside distDir — the
-  // request path is attacker-controlled.
+  // request path is attacker-controlled. A bare startsWith(distDir) is the
+  // classic sibling-directory bug: distDir + path.sep as the prefix (or an
+  // exact match for distDir itself) is required, otherwise "../dist-evil/x"
+  // would pass since the string "dist-evil" also starts with "dist".
   const requestedPath = path.normalize(
     path.join(distDir, decodeURIComponent(url.pathname)),
   )
-  if (!requestedPath.startsWith(distDir)) {
+  if (
+    requestedPath !== distDir &&
+    !requestedPath.startsWith(distDir + path.sep)
+  ) {
     res.writeHead(400)
     res.end('Bad request')
     return
