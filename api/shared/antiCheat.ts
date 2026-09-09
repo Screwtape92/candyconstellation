@@ -57,6 +57,15 @@ const TOLERANCE_MULTIPLIER = 1.15
 // "minimum viable run"). A run this short can't have produced a real score.
 const MIN_VIABLE_RUN_SEC = 1
 
+// Added 2026-09-09, live at the beerfest event: several submissions used
+// elapsedSec values like 2000/8000/20000/86400 (33 min to 24h) with a large
+// score to match — `maxPlausibleScore` below is a ratio check, generous by
+// design (favours false-accept over false-reject), so a big enough fabricated
+// elapsedSec always clears it however large the paired score is. No genuine
+// run gets anywhere near this long given the difficulty ramp and health
+// system; generous ceiling well above any real session, not a tuned value.
+const MAX_VIABLE_RUN_SEC = 1800
+
 // Mirror of DifficultyCurve.spawnIntervalMs(t), expressed in seconds. The
 // overall spawn cadence (all kinds combined) at elapsed time t.
 function spawnIntervalSec(t: number): number {
@@ -100,7 +109,17 @@ export function maxPlausibleScore(elapsedSec: number): number {
 }
 
 export function isPlausibleScore(score: number, elapsedSec: number): boolean {
-  if (elapsedSec < MIN_VIABLE_RUN_SEC) {
+  if (elapsedSec < MIN_VIABLE_RUN_SEC || elapsedSec > MAX_VIABLE_RUN_SEC) {
+    return false
+  }
+  // Real elapsedSec comes from Phaser's clock accumulating per-frame delta
+  // time (ScoreSystem.elapsedSec: `(time.now - time.startTime) / 1000`), so it
+  // essentially never lands on an exact whole number — every genuine
+  // submission on record has a many-decimal-digit value. An integer here is
+  // the signature of a hand-crafted request (curl/devtools straight to this
+  // endpoint), not an actual play session — added 2026-09-09 alongside
+  // MAX_VIABLE_RUN_SEC above after exactly that pattern showed up live.
+  if (Number.isInteger(elapsedSec)) {
     return false
   }
   return score <= maxPlausibleScore(elapsedSec)

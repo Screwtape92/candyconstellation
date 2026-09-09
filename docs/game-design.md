@@ -417,7 +417,37 @@ maxPlausibleScore(elapsedSec) =
 reject submission if:
   score > maxPlausibleScore(elapsedSec)
   OR elapsedSec < minViableRunSec
+  OR elapsedSec > maxViableRunSec                         // added 2026-09-09
+  OR elapsedSec is an integer                             // added 2026-09-09
 ```
+
+**`maxViableRunSec` + integer-`elapsedSec` rejection — added 2026-09-09, live
+at the beerfest event.** The ratio check above is a generous ceiling by
+design (favours false-accept over false-reject of an honest great run), which
+means it has no opinion on whether `elapsedSec` itself is real — a request
+sent directly to `submitScore` (curl/devtools, bypassing the game entirely)
+can declare an arbitrarily large `elapsedSec` and get a proportionally huge
+`score` waved through. Exactly this happened live: several submissions with
+names like "Pwned & Hacked" / "HackerMan2000" used `elapsedSec` values from
+2000 to 86400 (33 min to 24h — no real run gets remotely close) to legitimize
+7-8 digit scores. Two mutually-reinforcing checks added in response:
+
+- `maxViableRunSec` (placeholder **1800s / 30 min**, `MAX_VIABLE_RUN_SEC` in
+  `api/shared/antiCheat.ts`) — generous ceiling, not a tuned value; no genuine
+  run gets anywhere near it given the difficulty ramp and health system.
+- Reject non-fractional `elapsedSec`. The client (`ScoreSystem.elapsedSec`,
+  `src/game/systems/ScoreSystem.ts`) computes it from Phaser's frame-
+  accumulated clock (`(time.now - time.startTime) / 1000`), which essentially
+  never lands on an exact whole number — every genuine submission on record
+  has a many-decimal-digit value. This one alone catches short fabricated
+  values too (e.g. `elapsedSec: 200`), which `maxViableRunSec` doesn't touch.
+
+The `maxViableRunSec` bound alone doesn't catch a short fabricated pair (a
+attacker claiming a plausible-length run with a plausible-for-that-length
+score is indistinguishable from a real one by either check) — this only
+closes the "absurdly long claimed run" exploit actually observed, not
+impersonation/fabrication in general, which remains the accepted limitation
+described in `docs/architecture.md`'s "Rate-limiting" section.
 
 `maxCandyRatePerSec` should be derived from the same spawn-table constants
 used for the difficulty curve above, using the same decaying-rate (`sqrt(t)`-
@@ -697,6 +727,7 @@ All marked non-final — placeholder defaults only, to be set via playtesting:
 | difficulty tier length| TBD (sec)   | see difficulty curve above     |
 | anti-cheat tolerance  | 1.15 — TUNABLE, placeholder, not final | `toleranceMultiplier` in the anti-cheat formula above; mirrored server-side as `TOLERANCE_MULTIPLIER` in `api/shared/antiCheat.ts` |
 | minimum viable run    | 1 (sec) — TUNABLE, placeholder, not final | `minViableRunSec` in the anti-cheat formula above: submissions reporting a shorter run are rejected as implausible. Mirrored server-side as `MIN_VIABLE_RUN_SEC` in `api/shared/antiCheat.ts` |
+| maximum viable run    | 1800 (sec / 30 min) — generous ceiling, not tuned | `maxViableRunSec` in the anti-cheat formula above, added 2026-09-09 after live-event abuse (see that section). `MAX_VIABLE_RUN_SEC` in `api/shared/antiCheat.ts` |
 | hit-stop duration     | 80 (ms) — TUNABLE, playtest, not final | freeze-frame on an accepted hit (physics paused, then resumed); short enough to punctuate impact without stalling the auto-scroll. See "Feel & experience" above |
 | screen shake intensity| 0.01 (fraction of viewport) over 200 (ms) — TUNABLE, playtest, not final | on an accepted hit; deliberately well below Phaser's 0.05 default, which is jarring for a dodger. No motion-sensitivity toggle (see "Feel & experience"). See "Feel & experience" above |
 | particle burst        | 12 particles/burst, cap 60 concurrent alive — TUNABLE, playtest, not final | one-shot burst on hit (red) and on candy/power-up pickup (warm sparkle); the concurrent-alive cap enforces the "explicit caps on active particles" + graceful-degradation rule in `docs/architecture.md` (explode() emits fewer/none rather than exceeding the cap). See "Feel & experience" above |
