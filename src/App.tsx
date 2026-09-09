@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 
+import type { LeaderboardEntry } from './api-client/getLeaderboard'
 import { drainQueue, RETRY_INTERVAL_MS } from './api-client/retryQueue'
 import {
   eventBus,
@@ -30,6 +31,9 @@ const SCROLLING_VIEWS: View[] = ['landing', 'leaderboard', 'buildstory']
 function App() {
   const [view, setView] = useState<View>('landing')
   const [lastRun, setLastRun] = useState<GameOverPayload | null>(null)
+  const [justSubmitted, setJustSubmitted] = useState<LeaderboardEntry | null>(
+    null,
+  )
   // Landing is already mounted underneath the whole time — this is a
   // full-screen overlay that clears, not a route the real page waits behind.
   const [showSplash, setShowSplash] = useState(true)
@@ -93,10 +97,17 @@ function App() {
         </PlaySidePanels>
       )}
       {view === 'postgame' && lastRun && (
-        <PostGame run={lastRun} onSubmitted={() => setView('leaderboard')} />
+        <PostGame
+          run={lastRun}
+          onSubmitted={(entry) => {
+            setJustSubmitted(entry)
+            setView('leaderboard')
+          }}
+        />
       )}
       {view === 'leaderboard' && (
         <Leaderboard
+          justSubmitted={justSubmitted}
           onPlayAgain={() => setView('playing')}
           onBackToHome={() => setView('landing')}
         />

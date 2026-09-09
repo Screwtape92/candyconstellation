@@ -282,6 +282,27 @@ rather than push-based realtime — this avoids needing Azure SignalR and
 realistically keeps the whole backend at $0/month on the Static Web Apps
 free tier plus Table Storage's pay-per-transaction pricing.
 
+**Fixed 2026-09-09: own score missing from the immediate post-submit view.**
+`submitScore` is fire-and-forget (see "Score submission flow" below) and the
+Leaderboard page's first `getLeaderboard` fetch fires essentially at the same
+moment (both fired back-to-back with nothing awaited in between) — there's no
+guarantee the submission's write lands before that read, so the just-played
+run could be missing the instant the player lands on the Leaderboard page,
+only appearing on the next poll (up to `POLL_INTERVAL_MS` later). Reproduced
+directly: firing the two requests concurrently against the self-hosted server
+dropped the new score from the immediate read in ~40% of trials. Fixed by
+having `PostGame` hand the Leaderboard page the just-submitted entry (name,
+score, elapsedSec) it already knows locally — independent of whether the
+network request has resolved, or even succeeded — and merging it client-side
+(`mergeJustSubmitted` in `src/pages/Leaderboard.tsx`) into whatever
+`getLeaderboard` returns, so the run is visible on first render regardless of
+the race. Once the server's own copy shows up in a later poll it's recognized
+as the same entry (matched on playerName+score+elapsedSec — `getLeaderboard`'s
+response carries no `submissionGuid` to key off instead) and the optimistic
+row is dropped rather than duplicated. This also wires up
+`LeaderboardTable`'s `highlightIndex` prop, which existed but had no caller
+before this fix.
+
 ## Score submission flow
 
 No sign-in step. At GameOver, the player types a free-text name in the

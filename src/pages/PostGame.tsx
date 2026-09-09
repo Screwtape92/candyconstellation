@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 
+import type { LeaderboardEntry } from '../api-client/getLeaderboard'
 import { enqueue } from '../api-client/retryQueue'
 import { submitScore } from '../api-client/submitScore'
 import type { GameOverPayload } from '../game/eventBus'
@@ -12,7 +13,7 @@ const MAX_NAME_LENGTH = 24
 
 interface PostGameProps {
   run: GameOverPayload
-  onSubmitted: () => void
+  onSubmitted: (entry: LeaderboardEntry) => void
 }
 
 // Post-game screen (docs/game-design.md state machine: GameOverScene -> React
@@ -39,7 +40,17 @@ export function PostGame({ run, onSubmitted }: PostGameProps) {
       // returns, so a dropped connection doesn't lose the score.
       enqueue(submission)
     })
-    onSubmitted()
+    // The Leaderboard's own getLeaderboard fetch races this submission (both
+    // fire off at once, fire-and-forget) and sometimes wins, so the new score
+    // can be missing from that first read regardless of success/failure here.
+    // Hand the Leaderboard what we already know locally so it can show this
+    // run immediately instead of waiting on a race or the next poll.
+    onSubmitted({
+      playerName: submission.name,
+      score: submission.score,
+      elapsedSec: submission.elapsedSec,
+      achievedAtUtc: new Date().toISOString(),
+    })
   }
 
   return (
