@@ -352,6 +352,21 @@ a run-scoped anti-cheat proof, not an identity), no consent/fallback logic
   collectible/kill value in the game is a fixed, known constant, so this
   can't be satisfied by picking a plausible-looking number, only by
   reverse-engineering the actual scoring internals.
+- **Live progress verification — same date, the strongest layer yet**
+  (`docs/game-design.md` "Live progress verification" has the full account).
+  Both checks above still only judge a claim made *after the fact* — nothing
+  required anything to happen *during* the run, which is exactly what let a
+  script (reading the public source, waiting the real time, computing one
+  correct-looking final report) reach #2 on the board. Now `PlayScene`
+  reports its running `candyPoints`/`killPoints` to `POST /api/reportProgress`
+  every few seconds during play, the server keeps its own checkpoint per
+  token, and `submitScore` requires the final claim to match that checkpoint
+  exactly, checkpointed close to the claimed run end. Turns "compute one
+  number after waiting" into "run a live process pacing correctly for the
+  entire real duration" — closes the specific gap that made this trivial for
+  an AI assistant to do in minutes, though not the categorically larger case
+  of someone actually running such a process for real (full server-side game
+  simulation is what that would take, and is out of scope).
 - **Rate-limiting (judgment call, flagging for review, not yet signed off):**
   this is a standalone public web link, not a bounded venue/timeframe event —
   there's no fixed attendee count and no closing time, so an unrated

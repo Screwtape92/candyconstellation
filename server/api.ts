@@ -7,12 +7,14 @@ import {
   isValidCandyPoints,
   isValidKillPoints,
 } from '../api/shared/scoreDecomposition.js'
+import { isFreshCheckpoint } from '../api/shared/liveProgress.js'
 import {
   incrementAndCheckRateLimit,
   incrementAndCheckRunTokenRateLimit,
+  incrementAndCheckReportProgressRateLimit,
 } from './rateLimit.js'
 import { insertScore, topScores } from './scores.js'
-import { consumeRunToken, issueRunToken } from './runTokens.js'
+import { consumeRunToken, issueRunToken, recordProgress } from './runTokens.js'
 
 // Same two endpoints as api/submitScore and api/getLeaderboard, same
 // validation/anti-cheat/rate-limit rules (imported directly from
@@ -143,6 +145,25 @@ export async function handleSubmitScore(
     return
   }
 
+  // Live progress verification (docs/game-design.md "Live progress
+  // verification"): the final claim must match the server's own
+  // periodically-checkpointed tally exactly (not just be independently
+  // plausible), and that checkpoint must have landed close to when the run
+  // *claims* to have ended — proving live reports kept arriving, correctly
+  // paced, for the run's entire real duration, not just that a single
+  // number was computed after the fact and submitted once real time had
+  // passed.
+  if (
+    candyPoints !== consumed.lastCandyPoints ||
+    killPoints !== consumed.lastKillPoints ||
+    !isFreshCheckpoint(consumed.lastReportAtUtc, consumed.issuedAtUtc, elapsedSec)
+  ) {
+    sendJson(res, 422, {
+      error: 'Score is not plausible for the reported run length.',
+    })
+    return
+  }
+
   if (!isPlausibleScore(score, elapsedSec)) {
     sendJson(res, 422, {
       error: 'Score is not plausible for the reported run length.',
@@ -182,6 +203,59 @@ export function handleStartRun(
 
   const issued = issueRunToken()
   sendJson(res, 201, issued)
+}
+
+// Periodic progress checkpoint during a run (docs/game-design.md "Live
+// progress verification") — called every REPORT_INTERVAL_MS while
+// PlayScene is active (src/api-client/reportProgress.ts), fire-and-forget
+// from the client's side. Nothing reads the response body on failure, so
+// error messages here are terse — the real consequence of a bad report only
+// shows up later, at submitScore.
+export async function handleReportProgress(
+  req: IncomingMessage,
+  res: ServerResponse,
+): Promise<void> {
+  let body: unknown
+  try {
+    const raw = await readBody(req)
+    body = JSON.parse(raw)
+  } catch (err) {
+    if (err instanceof PayloadTooLargeError) {
+      sendJson(res, 413, { error: 'Request body too large.' })
+      res.socket?.destroy()
+      return
+    }
+    sendJson(res, 400, { error: 'Request body must be valid JSON.' })
+    return
+  }
+
+  if (typeof body !== 'object' || body === null) {
+    sendJson(res, 400, { error: 'Request body must be a JSON object.' })
+    return
+  }
+  const { runToken, candyPoints, killPoints } = body as Record<string, unknown>
+
+  if (typeof runToken !== 'string') {
+    sendJson(res, 400, { error: 'runToken must be a string.' })
+    return
+  }
+  if (typeof candyPoints !== 'number' || !isValidCandyPoints(candyPoints)) {
+    sendJson(res, 400, { error: 'candyPoints must be a non-negative integer.' })
+    return
+  }
+  if (typeof killPoints !== 'number' || !isValidKillPoints(killPoints)) {
+    sendJson(res, 400, { error: 'killPoints must be a non-negative integer.' })
+    return
+  }
+
+  const rateLimit = incrementAndCheckReportProgressRateLimit(req)
+  if (rateLimit.limited) {
+    sendJson(res, 429, { error: 'Too many progress reports.' })
+    return
+  }
+
+  const result = recordProgress(runToken, candyPoints, killPoints)
+  sendJson(res, result === 'ok' ? 200 : 422, { ok: result === 'ok' })
 }
 
 const DEFAULT_TOP = 20

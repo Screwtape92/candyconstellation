@@ -584,6 +584,102 @@ attack actually observed tonight.
   That's reassuring but not proof on its own for anything submitted before
   this check went live; going forward, it's an enforced gate, not just an
   audit.
+- **Superseded within hours.** Two more fabricated entries ("Marco Hacked
+  Again", "BetterThanHacker" — both self-admitted, both ~1499s/25min claimed
+  runs with a valid decomposition) landed after this check went live but
+  before "Live progress verification" below did, confirming exactly the gap
+  that section describes: a correct decomposition alone was never going to
+  be the last word, because it says nothing about whether the numbers were
+  produced by playing.
+
+## Live progress verification
+
+**Added 2026-09-09, live at the beerfest event** — the strongest layer yet,
+prompted directly by a user question: *"people are using Claude to hack
+this, and for Claude to read source and fake the run seems relatively
+easy?"* That reframes the threat model in a way every check above still
+doesn't close. Run-token verification (above) ties `elapsedSec` to real
+time; the score decomposition check ties `score` to the game's actual
+denominations — but both are checks against a claim made *after the fact*.
+Nothing so far requires anything to happen *during* the run. Reading the
+publicly-served source (candy=50, kill=30/60/100, the plausibility formula,
+the token/decomposition rules themselves) and writing a script that waits
+the right amount of real time, then submits one correct-looking report, is
+exactly the kind of task an AI assistant does in minutes — no meaningful
+skill barrier left, which is precisely how "Hackerman2000" (elapsedSec
+1217.453, a valid decomposition, real wait confirmed by run-token) got to
+#2 on the board, and how two more got past even the decomposition check
+afterward (see above).
+
+The fix stops trusting a single end-of-run report at all. `PlayScene` now
+reports its cumulative `candyPoints`/`killPoints` to a new
+`POST /api/reportProgress` every `REPORT_INTERVAL_MS` (3s) while a run is in
+progress, plus once more at the exact moment of death (the periodic timer
+stops the instant the scene pauses for GameOver, so this explicit final
+call is what keeps the last checkpoint from lagging behind the true final
+tally by up to a full interval). The server keeps its own running
+checkpoint per token (`run_tokens`' new `last_report_at_utc`/
+`last_candy_points`/`last_kill_points`/`flagged` columns, or the Table
+Storage equivalent), and `submitScore` now requires the final claim to
+match that checkpoint *exactly*, checkpointed close to when the run claims
+to have ended.
+
+Two validations happen on every `/api/reportProgress` call
+(`api/shared/liveProgress.ts`), both necessary together — either alone
+degenerates back to a whole-run check with no more teeth than what already
+existed:
+
+- **Delta bounded by real elapsed time since the *previous* checkpoint**
+  (not since run start) — reuses the same `maxCandyRatePerSec`/
+  `maxKillRatePerSec` ceilings from the plausibility formula, now evaluated
+  over each short interval instead of the whole run, with a looser
+  tolerance (`DELTA_TOLERANCE_MULTIPLIER = 3`, vs. 1.15 for the whole-run
+  ceiling — short intervals are exactly where a legitimate burst, e.g.
+  Candy Magnet pulling in several candies at once, reads as a spike
+  relative to its own tiny window).
+- **A hard cap on the gap itself** (`MAX_REPORT_GAP_SEC = 12`, generous
+  against the 3s client cadence) — without this, an attacker could send
+  just two checkpoints (start and end) and the delta-vs-gap math would
+  reduce to exactly the same whole-run ratio check that already existed,
+  no better. Requiring frequent checkpoints is what actually forces a
+  real, continuous process running for the *entire* claimed duration,
+  rather than one number computed after the fact.
+
+At submission, `isFreshCheckpoint` (same file) checks the last checkpoint
+landed within `MAX_REPORT_GAP_SEC` of the *claimed run end*
+(`issuedAtUtc + elapsedSec`) — deliberately not of "now": submission can be
+delayed arbitrarily by the post-game name-entry screen or the offline retry
+queue (docs/architecture.md "Score-submission resilience"), and neither
+should ever make an honest, already-finished run look stale.
+
+**What this doesn't close**: someone willing to actually run a script for
+the entire real duration, correctly pacing plausible-looking increments the
+whole time (not just at the start and end), still can't be distinguished
+from a genuine player without full server-side game simulation — a
+categorically larger undertaking, explicitly out of scope (see the
+"server-side simulation" conversation this same night). What this closes
+is turning that from a five-minute AI-assisted task into something that
+requires sustained engineering effort matching the real time investment of
+actually playing — a meaningfully different threat model for a casual
+beerfest leaderboard.
+
+Verified 2026-09-09 against the self-hosted server: a token-and-wait
+submission with zero progress reports is rejected (422); a "front-load"
+attempt (report almost nothing, then claim a huge late jump) is rejected at
+the report itself (`{"ok":false}`, token flagged) and any later submission
+against that token then fails too; a 20-second gap between reports flags
+the token the same way; and a genuine run reporting real, paced progress
+throughout is accepted (201) with the exact same total a hand-fabricated
+submission would have needed to reverse-engineer.
+
+Implemented on both backends, same pattern as run-token verification and
+score decomposition: `api/shared/liveProgress.ts` holds the storage-agnostic
+validation logic, `server/runTokens.ts` (SQLite) and
+`api/shared/runTokenStore.ts` (Table Storage) each do their own
+lookup/update. Live-tested against the self-hosted server above; the Azure
+side type-checks and builds but hasn't been exercised against real Table
+Storage tonight, same caveat as every other Azure-path addition this
+session.
 
 ## Audio spec
 

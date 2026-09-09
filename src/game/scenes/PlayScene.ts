@@ -7,6 +7,7 @@ import { Player } from '../entities/Player'
 import { PowerUp } from '../entities/PowerUp'
 import type { Projectile } from '../entities/Projectile'
 import { startRun } from '../../api-client/startRun'
+import { reportProgress, REPORT_INTERVAL_MS } from '../../api-client/reportProgress'
 import { eventBus, HUD_UPDATE_EVENT } from '../eventBus'
 import { AudioSystem } from '../systems/AudioSystem'
 import { BlasterSystem, PROJECTILE_DAMAGE } from '../systems/BlasterSystem'
@@ -185,6 +186,27 @@ export class PlayScene extends Phaser.Scene {
     // needed to zero its clock (see ScoreSystem.elapsedSec).
     this.scoreSystem = new ScoreSystem(this)
 
+    // Live progress verification (docs/game-design.md "Live progress
+    // verification"): periodic checkpoints while the run is active, so the
+    // server builds its own tally as play happens rather than trusting only
+    // the one report submitScore gets at GameOver. this.time is Phaser's own
+    // per-scene Time system, so this timer is cleaned up automatically on
+    // scene shutdown/restart — no manual teardown needed (same convention as
+    // every other timed trigger, docs/architecture.md "Engine patterns").
+    this.time.addEvent({
+      delay: REPORT_INTERVAL_MS,
+      loop: true,
+      callback: () => {
+        if (this.runToken) {
+          void reportProgress(
+            this.runToken,
+            this.scoreSystem.candyPoints,
+            this.scoreSystem.killPoints,
+          )
+        }
+      },
+    })
+
     this.healthText = this.add.text(
       16,
       16,
@@ -231,6 +253,19 @@ export class PlayScene extends Phaser.Scene {
     // releasing captures here, well before the React transition even starts,
     // closes that window entirely rather than racing it.
     this.events.once('gameOver', () => {
+      // One last checkpoint at the exact moment of death (docs/game-design.md
+      // "Live progress verification") — the periodic timer above stops firing
+      // the instant scene.pause() freezes this scene's Time system below, so
+      // without this explicit call the server's last checkpoint could be up
+      // to REPORT_INTERVAL_MS stale relative to the real final tally
+      // submitScore is about to be asked to match exactly.
+      if (this.runToken) {
+        void reportProgress(
+          this.runToken,
+          this.scoreSystem.candyPoints,
+          this.scoreSystem.killPoints,
+        )
+      }
       this.input.keyboard?.clearCaptures()
       this.scene.pause()
       this.scene.launch('GameOverScene', {

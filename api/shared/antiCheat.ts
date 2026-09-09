@@ -83,7 +83,10 @@ function spawnIntervalSec(t: number): number {
 // grows with the same sqrt(t) curve as the difficulty ramp (spawn interval
 // shrinks over time, so the rate rises), so a long, skilled run isn't falsely
 // rejected by a fixed ceiling that no longer exists in the difficulty design.
-function maxCandyRatePerSec(t: number): number {
+// Exported for liveProgress.ts, which reuses these same per-second ceilings
+// to bound each incremental progress report, not just the whole-run total —
+// see that file for why.
+export function maxCandyRatePerSec(t: number): number {
   const candyFraction = COLLECTIBLE_WEIGHT / TOTAL_SPAWN_WEIGHT
   return (candyFraction * COLLECTIBLE_VALUE) / spawnIntervalSec(t)
 }
@@ -94,7 +97,7 @@ function maxCandyRatePerSec(t: number): number {
 // every single shot landed on the single highest-value obstacle. Flat, not
 // time-varying — unlike candy this isn't gated by spawn cadence, it's gated
 // by fire rate, which doesn't change over a run.
-function maxKillRatePerSec(): number {
+export function maxKillRatePerSec(): number {
   return MAX_OBSTACLE_KILL_VALUE / (BLASTER_FIRE_COOLDOWN_MS / 1000)
 }
 

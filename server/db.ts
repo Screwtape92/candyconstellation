@@ -45,10 +45,22 @@ db.exec(`
   -- added 2026-09-09): issued at real run start, consumed (single-use) at
   -- submission, so submitScore can check the claimed elapsedSec against real
   -- server-observed elapsed time instead of trusting it as pure client input.
+  -- last_report_at_utc/last_candy_points/last_kill_points/flagged added
+  -- 2026-09-09 (docs/game-design.md "Live progress verification"): the
+  -- server's own running checkpoint of a run's progress, built up from
+  -- periodic /api/reportProgress calls during play rather than trusted only
+  -- from the final submitScore report. flagged is set the moment any single
+  -- progress report fails validation (a too-large jump, a gap that's too
+  -- long) and makes the token permanently unusable at submission, even if a
+  -- later report on the same token would look fine in isolation.
   CREATE TABLE IF NOT EXISTS run_tokens (
     token TEXT PRIMARY KEY,
     issued_at_utc TEXT NOT NULL,
-    consumed INTEGER NOT NULL DEFAULT 0
+    consumed INTEGER NOT NULL DEFAULT 0,
+    last_report_at_utc TEXT,
+    last_candy_points INTEGER NOT NULL DEFAULT 0,
+    last_kill_points INTEGER NOT NULL DEFAULT 0,
+    flagged INTEGER NOT NULL DEFAULT 0
   );
 
   -- Separate, more generous bucket from rate_limits above (which throttles
@@ -61,4 +73,37 @@ db.exec(`
     count INTEGER NOT NULL,
     PRIMARY KEY (client_ip, bucket)
   );
+
+  -- reportProgress's own bucket (docs/game-design.md "Live progress
+  -- verification") — a single run reports every few seconds for its whole
+  -- duration, far more frequently than run starts or submissions, so this
+  -- needs its own, much more generous threshold.
+  CREATE TABLE IF NOT EXISTS report_progress_rate_limits (
+    client_ip TEXT NOT NULL,
+    bucket TEXT NOT NULL,
+    count INTEGER NOT NULL,
+    PRIMARY KEY (client_ip, bucket)
+  );
 `)
+
+// Migration for the four run_tokens columns above: this project has no
+// migration framework, and `run_tokens` already existed (without these
+// columns) before tonight's live-progress feature, so CREATE TABLE IF NOT
+// EXISTS above is a no-op against the real file on disk. SQLite has no
+// `ADD COLUMN IF NOT EXISTS`, so each ALTER is just tried and its "duplicate
+// column name" failure (a fresh database created with the columns already
+// in the CREATE TABLE above) is swallowed rather than treated as an error.
+for (const alter of [
+  'ALTER TABLE run_tokens ADD COLUMN last_report_at_utc TEXT',
+  'ALTER TABLE run_tokens ADD COLUMN last_candy_points INTEGER NOT NULL DEFAULT 0',
+  'ALTER TABLE run_tokens ADD COLUMN last_kill_points INTEGER NOT NULL DEFAULT 0',
+  'ALTER TABLE run_tokens ADD COLUMN flagged INTEGER NOT NULL DEFAULT 0',
+]) {
+  try {
+    db.exec(alter)
+  } catch (err) {
+    if (!(err instanceof Error) || !err.message.includes('duplicate column')) {
+      throw err
+    }
+  }
+}

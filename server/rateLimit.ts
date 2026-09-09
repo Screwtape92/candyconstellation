@@ -108,3 +108,16 @@ export const incrementAndCheckRunTokenRateLimit = makeLimiter(
   'run_token_rate_limits',
   RUN_TOKEN_RATE_LIMIT_MAX,
 )
+
+// Live progress verification (docs/game-design.md "Live progress
+// verification") reports every few seconds for a run's entire duration — far
+// more frequent than starting a run or submitting a score, so this needs a
+// much larger threshold than either bucket above. A ~10-minute run at one
+// report per REPORT_INTERVAL_MS (3s) is ~200 calls; generous headroom over
+// that for jitter/retries, still nowhere near what a real IP's normal replay
+// traffic could organically reach.
+export const REPORT_PROGRESS_RATE_LIMIT_MAX = 600
+export const incrementAndCheckReportProgressRateLimit = makeLimiter(
+  'report_progress_rate_limits',
+  REPORT_PROGRESS_RATE_LIMIT_MAX,
+)

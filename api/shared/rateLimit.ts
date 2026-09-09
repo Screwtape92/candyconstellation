@@ -4,6 +4,7 @@ import {
   ensureTablesReady,
   getRateLimitsTableClient,
   getRunTokenRateLimitsTableClient,
+  getReportProgressRateLimitsTableClient,
 } from './tableStorageClient'
 
 // Per-IP rate limiting for submitScore (docs/architecture.md "Rate-limiting").
@@ -136,5 +137,23 @@ export async function incrementAndCheckRunTokenRateLimit(
     getRunTokenRateLimitsTableClient(),
     request,
     RUN_TOKEN_RATE_LIMIT_MAX,
+  )
+}
+
+// Live progress verification (docs/game-design.md "Live progress
+// verification") reports every few seconds for a run's entire duration — far
+// more frequent than starting a run or submitting a score, so this needs a
+// much larger threshold than either bucket above. See server/rateLimit.ts's
+// identical constant for the sizing rationale.
+export const REPORT_PROGRESS_RATE_LIMIT_MAX = 600
+
+export async function incrementAndCheckReportProgressRateLimit(
+  request: HttpRequest,
+): Promise<RateLimitResult> {
+  await ensureTablesReady()
+  return incrementAndCheck(
+    getReportProgressRateLimitsTableClient(),
+    request,
+    REPORT_PROGRESS_RATE_LIMIT_MAX,
   )
 }

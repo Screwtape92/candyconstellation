@@ -17,9 +17,10 @@ import {
   isValidCandyPoints,
   isValidKillPoints,
 } from '../shared/scoreDecomposition'
+import { isFreshCheckpoint } from '../shared/liveProgress'
 import { buildRowKey } from '../shared/scoreKey'
 import { incrementAndCheckRateLimit } from '../shared/rateLimit'
-import { consumeRunToken } from '../shared/runTokenStore'
+import { consumeRunToken, type ConsumedRunToken } from '../shared/runTokenStore'
 import { getRunTokensTableClient } from '../shared/tableStorageClient'
 
 const SCORES_PARTITION_KEY = 'score'
@@ -80,10 +81,11 @@ export async function submitScore(
   // as the plausibility check below — both boil down to "this claimed run
   // isn't credible" and there's no benefit to an attacker in distinguishing
   // which specific check caught it.
+  let consumed: ConsumedRunToken
   try {
     await ensureTablesReady()
-    const consumed = await consumeRunToken(getRunTokensTableClient(), runToken)
-    if (!consumed || !isValidRunDuration(elapsedSec, consumed.issuedAtUtc)) {
+    const result = await consumeRunToken(getRunTokensTableClient(), runToken)
+    if (!result || !isValidRunDuration(elapsedSec, result.issuedAtUtc)) {
       return {
         status: 422,
         jsonBody: {
@@ -91,6 +93,7 @@ export async function submitScore(
         },
       }
     }
+    consumed = result
   } catch (err) {
     context.error('submitScore run-token check failed', err)
     return {
@@ -108,6 +111,24 @@ export async function submitScore(
     !isValidCandyPoints(candyPoints) ||
     !isValidKillPoints(killPoints) ||
     !isConsistentScore(score, elapsedSec, candyPoints, killPoints)
+  ) {
+    return {
+      status: 422,
+      jsonBody: {
+        error: 'Score is not plausible for the reported run length.',
+      },
+    }
+  }
+
+  // Live progress verification (docs/game-design.md "Live progress
+  // verification"): the final claim must match the server's own
+  // periodically-checkpointed tally exactly, checkpointed close to when the
+  // run *claims* to have ended — proving live reports kept arriving,
+  // correctly paced, for the run's entire real duration.
+  if (
+    candyPoints !== consumed.lastCandyPoints ||
+    killPoints !== consumed.lastKillPoints ||
+    !isFreshCheckpoint(consumed.lastReportAtUtc, consumed.issuedAtUtc, elapsedSec)
   ) {
     return {
       status: 422,
