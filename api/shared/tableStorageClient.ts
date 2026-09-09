@@ -2,6 +2,12 @@ import { TableClient, TableServiceClient } from '@azure/data-tables'
 
 export const SCORES_TABLE = 'Scores'
 export const RATE_LIMITS_TABLE = 'RateLimits'
+// Run-token verification (docs/game-design.md "Run token verification",
+// added 2026-09-09) — separate table/bucket from RATE_LIMITS_TABLE above so
+// replaying several runs in a row never throttles token issuance before any
+// of those runs even reach submission.
+export const RUN_TOKENS_TABLE = 'RunTokens'
+export const RUN_TOKEN_RATE_LIMITS_TABLE = 'RunTokenRateLimits'
 
 const connectionString =
   process.env.AzureWebJobsStorage ?? 'UseDevelopmentStorage=true'
@@ -26,6 +32,14 @@ export function getRateLimitsTableClient(): TableClient {
   return getTableClient(RATE_LIMITS_TABLE)
 }
 
+export function getRunTokensTableClient(): TableClient {
+  return getTableClient(RUN_TOKENS_TABLE)
+}
+
+export function getRunTokenRateLimitsTableClient(): TableClient {
+  return getTableClient(RUN_TOKEN_RATE_LIMITS_TABLE)
+}
+
 export async function ensureTablesExist(): Promise<void> {
   const service = TableServiceClient.fromConnectionString(
     connectionString,
@@ -33,6 +47,8 @@ export async function ensureTablesExist(): Promise<void> {
   )
   await service.createTable(SCORES_TABLE)
   await service.createTable(RATE_LIMITS_TABLE)
+  await service.createTable(RUN_TOKENS_TABLE)
+  await service.createTable(RUN_TOKEN_RATE_LIMITS_TABLE)
 }
 
 // Cache the table-creation so it runs at most once per process (cold start)

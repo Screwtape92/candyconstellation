@@ -1,8 +1,13 @@
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { validateSubmission } from '../api/shared/inputValidation.js'
 import { isPlausibleScore } from '../api/shared/antiCheat.js'
-import { incrementAndCheckRateLimit } from './rateLimit.js'
+import { isValidRunDuration } from '../api/shared/runToken.js'
+import {
+  incrementAndCheckRateLimit,
+  incrementAndCheckRunTokenRateLimit,
+} from './rateLimit.js'
 import { insertScore, topScores } from './scores.js'
+import { consumeRunToken, issueRunToken } from './runTokens.js'
 
 // Same two endpoints as api/submitScore and api/getLeaderboard, same
 // validation/anti-cheat/rate-limit rules (imported directly from
@@ -88,7 +93,8 @@ export async function handleSubmitScore(
     sendJson(res, 400, { error: validation.error })
     return
   }
-  const { name, score, elapsedSec, submissionGuid } = validation.value
+  const { name, score, elapsedSec, submissionGuid, runToken } =
+    validation.value
 
   // Per-IP rate limit: increment the caller's bucket and reject before the
   // anti-cheat check or the scores write — the increment happens regardless
@@ -98,6 +104,20 @@ export async function handleSubmitScore(
   if (rateLimit.limited) {
     sendJson(res, 429, {
       error: 'Too many submissions. Please wait a few minutes and retry.',
+    })
+    return
+  }
+
+  // Run-token verification (docs/game-design.md "Run token verification"):
+  // consumeRunToken is single-use, so a missing/unknown/already-used token is
+  // rejected here before isValidRunDuration even runs. Same rejection message
+  // as the plausibility check below — both boil down to "this claimed run
+  // isn't credible" and there's no benefit to an attacker in distinguishing
+  // which specific check caught it.
+  const consumed = consumeRunToken(runToken)
+  if (!consumed || !isValidRunDuration(elapsedSec, consumed.issuedAtUtc)) {
+    sendJson(res, 422, {
+      error: 'Score is not plausible for the reported run length.',
     })
     return
   }
@@ -120,6 +140,27 @@ export async function handleSubmitScore(
     console.error('submitScore failed to persist row', err)
     sendJson(res, 500, { error: 'Failed to record score. Please retry.' })
   }
+}
+
+// Issues a run token the moment a run actually starts (docs/game-design.md
+// "Run token verification") — called by the client from PlayScene.create(),
+// well before there's anything to submit. Its own, more generous rate limit
+// (see run_token_rate_limits in db.ts) so replaying several runs in a row
+// never gets throttled before any of them even reach submission.
+export function handleStartRun(
+  req: IncomingMessage,
+  res: ServerResponse,
+): void {
+  const rateLimit = incrementAndCheckRunTokenRateLimit(req)
+  if (rateLimit.limited) {
+    sendJson(res, 429, {
+      error: 'Too many run starts. Please wait a few minutes and retry.',
+    })
+    return
+  }
+
+  const issued = issueRunToken()
+  sendJson(res, 201, issued)
 }
 
 const DEFAULT_TOP = 20

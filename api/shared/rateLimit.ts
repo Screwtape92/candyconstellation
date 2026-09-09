@@ -3,6 +3,7 @@ import { RestError } from '@azure/data-tables'
 import {
   ensureTablesReady,
   getRateLimitsTableClient,
+  getRunTokenRateLimitsTableClient,
 } from './tableStorageClient'
 
 // Per-IP rate limiting for submitScore (docs/architecture.md "Rate-limiting").
@@ -94,14 +95,13 @@ async function readCount(
 // under-counts. Accepted for this project's scale (a hobby beerfest game): the
 // only effect is a spammer occasionally getting one or two extra submissions
 // through under a burst, not a correctness or security hole worth ETag retries.
-export async function incrementAndCheckRateLimit(
+async function incrementAndCheck(
+  client: ReturnType<typeof getRateLimitsTableClient>,
   request: HttpRequest,
+  max: number,
 ): Promise<RateLimitResult> {
   const clientIp = getClientIp(request)
   const bucket = getTimeBucket()
-
-  await ensureTablesReady()
-  const client = getRateLimitsTableClient()
 
   const previous = await readCount(client, clientIp, bucket)
   const count = previous + 1
@@ -111,5 +111,30 @@ export async function incrementAndCheckRateLimit(
     'Merge',
   )
 
-  return { clientIp, bucket, count, limited: count > RATE_LIMIT_MAX }
+  return { clientIp, bucket, count, limited: count > max }
+}
+
+export async function incrementAndCheckRateLimit(
+  request: HttpRequest,
+): Promise<RateLimitResult> {
+  await ensureTablesReady()
+  return incrementAndCheck(getRateLimitsTableClient(), request, RATE_LIMIT_MAX)
+}
+
+// Run-token verification (docs/game-design.md "Run token verification") needs
+// its own, more generous bucket — a real player restarting several times in a
+// row ("instant restart") needs a fresh token per attempt, well before any of
+// those runs reach submission, so this must not throttle normal replay
+// behavior the way RATE_LIMIT_MAX above intentionally does.
+export const RUN_TOKEN_RATE_LIMIT_MAX = 30
+
+export async function incrementAndCheckRunTokenRateLimit(
+  request: HttpRequest,
+): Promise<RateLimitResult> {
+  await ensureTablesReady()
+  return incrementAndCheck(
+    getRunTokenRateLimitsTableClient(),
+    request,
+    RUN_TOKEN_RATE_LIMIT_MAX,
+  )
 }

@@ -61,30 +61,50 @@ export interface RateLimitResult {
   limited: boolean
 }
 
-const readCountStmt = db.prepare(
-  'SELECT count FROM rate_limits WHERE client_ip = ? AND bucket = ?',
-)
-const upsertCountStmt = db.prepare(
-  `INSERT INTO rate_limits (client_ip, bucket, count) VALUES (?, ?, ?)
-   ON CONFLICT(client_ip, bucket) DO UPDATE SET count = excluded.count`,
-)
+// Table name is only ever a hardcoded literal from the two calls below, never
+// request-derived, so building the SQL string with it carries no injection
+// risk. Factored out so submitScore and startRun (added 2026-09-09, see
+// run_token_rate_limits in db.ts) can each get their own bucket/threshold
+// without duplicating the read-increment-upsert logic.
+function makeLimiter(tableName: string, max: number) {
+  const readCountStmt = db.prepare(
+    `SELECT count FROM ${tableName} WHERE client_ip = ? AND bucket = ?`,
+  )
+  const upsertCountStmt = db.prepare(
+    `INSERT INTO ${tableName} (client_ip, bucket, count) VALUES (?, ?, ?)
+     ON CONFLICT(client_ip, bucket) DO UPDATE SET count = excluded.count`,
+  )
 
-// Increments this IP's counter for the current time bucket and reports
-// whether it's now over the limit — every call counts, regardless of the
-// eventual outcome, so a script hammering at the threshold can't dodge being
-// counted (same rule as the Azure path). node:sqlite is synchronous, so
-// there's no read-modify-write race window here the way there is with the
-// Table Storage version's separate get/upsert round-trips.
-export function incrementAndCheckRateLimit(
-  req: IncomingMessage,
-): RateLimitResult {
-  const clientIp = getClientIp(req)
-  const bucket = getTimeBucket()
+  // Increments this IP's counter for the current time bucket and reports
+  // whether it's now over the limit — every call counts, regardless of the
+  // eventual outcome, so a script hammering at the threshold can't dodge
+  // being counted (same rule as the Azure path). node:sqlite is synchronous,
+  // so there's no read-modify-write race window here the way there is with
+  // the Table Storage version's separate get/upsert round-trips.
+  return function incrementAndCheck(req: IncomingMessage): RateLimitResult {
+    const clientIp = getClientIp(req)
+    const bucket = getTimeBucket()
 
-  const row = readCountStmt.get(clientIp, bucket) as
-    { count: number } | undefined
-  const count = (row?.count ?? 0) + 1
-  upsertCountStmt.run(clientIp, bucket, count)
+    const row = readCountStmt.get(clientIp, bucket) as
+      { count: number } | undefined
+    const count = (row?.count ?? 0) + 1
+    upsertCountStmt.run(clientIp, bucket, count)
 
-  return { clientIp, bucket, count, limited: count > RATE_LIMIT_MAX }
+    return { clientIp, bucket, count, limited: count > max }
+  }
 }
+
+export const incrementAndCheckRateLimit = makeLimiter(
+  'rate_limits',
+  RATE_LIMIT_MAX,
+)
+
+// Generous relative to RATE_LIMIT_MAX above — a real player restarting
+// several times in a row ("instant restart") needs a fresh token per attempt,
+// well before any of those runs reach submission, so this must not throttle
+// normal replay behavior the way the submission limit intentionally does.
+export const RUN_TOKEN_RATE_LIMIT_MAX = 30
+export const incrementAndCheckRunTokenRateLimit = makeLimiter(
+  'run_token_rate_limits',
+  RUN_TOKEN_RATE_LIMIT_MAX,
+)

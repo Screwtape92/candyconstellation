@@ -275,6 +275,20 @@ characters) and the Leaderboard page encodes it safely on render, so a
 submitted name can't inject markup/script. This is a new concern introduced
 by dropping auth; it didn't exist when identity was validated server-side.
 
+Table: `RunTokens` — **added 2026-09-09**, see "Run token verification" in
+`docs/game-design.md` for why. `PartitionKey = token` (a `randomUUID()`, so
+each token is its own point lookup, never queried as a set — unlike `Scores`
+above this table has no single shared partition), `RowKey` a fixed constant.
+Fields: `IssuedAtUtc`, `Consumed` (bool). `startRun` creates a row;
+`submitScore` looks it up and flips `Consumed` via an ETag-conditional
+update — unlike `RateLimits` below, a lost update here would be a real
+security hole (a replayed token validating two submissions), not just a
+harmless undercount, so this one specific write doesn't get to reuse the
+plain-upsert race this doc accepts elsewhere. No scheduled cleanup job exists
+for this project, so stale rows aren't actively pruned — harmless, since a
+token past `RUN_TOKEN_MAX_AGE_SEC` is already rejected as expired regardless
+of whether its row still exists.
+
 ## Leaderboard refresh
 
 The Leaderboard page polls `getLeaderboard` on a simple interval (5-10s)
@@ -307,9 +321,10 @@ before this fix.
 
 No sign-in step. At GameOver, the player types a free-text name in the
 post-game screen; `submitScore` is called directly with
-`{ name, score, elapsedSec, submissionGuid }` — no bearer token, no identity
-to validate, no consent/fallback logic (there's no primary auth path to fall
-back from).
+`{ name, score, elapsedSec, submissionGuid, runToken }` — no bearer token or
+identity to validate (`runToken` below is a run-scoped anti-cheat proof, not
+an identity), no consent/fallback logic (there's no primary auth path to
+fall back from).
 
 - `submitScore` validates and sanitizes `name` server-side (see Input
   validation above) and checks `score`/`elapsedSec` against the anti-cheat
@@ -318,6 +333,16 @@ back from).
 - Because every request is anonymous, there's no server-enforceable "who
   submitted this" check and no impersonation prevention — an accepted
   trade-off, see `docs/planning-log.md`.
+- **Run token verification — added 2026-09-09, live at the beerfest event**
+  (`docs/game-design.md` "Run token verification" has the full account,
+  including the live exploit that prompted it). `POST /api/startRun` issues a
+  single-use, server-timestamped token the instant a run actually begins;
+  `submitScore` requires it and checks the claimed `elapsedSec` can't exceed
+  the real time elapsed since that token was issued. This is what the
+  rate-limiting note below originally flagged as a possible future addition
+  ("a lightweight per-session proof token issued at game start and required
+  at submit time") — it stopped being hypothetical once exactly the gap it
+  describes got exploited live.
 - **Rate-limiting (judgment call, flagging for review, not yet signed off):**
   this is a standalone public web link, not a bounded venue/timeframe event —
   there's no fixed attendee count and no closing time, so an unrated
@@ -341,8 +366,9 @@ back from).
     abuse — a rotating-IP or distributed attacker isn't stopped by it. Judged
     acceptable given the project's scale/budget; if spam becomes a real
     problem in practice, revisit with something heavier (e.g. Azure Front
-    Door rate-limiting rules, or a lightweight per-session proof token issued
-    at game start and required at submit time).
+    Door rate-limiting rules). The per-session proof token this bullet used to
+    propose as a future option is no longer hypothetical — see "Run token
+    verification" above.
 
 ## Score-submission resilience
 
@@ -410,6 +436,13 @@ fallback beyond `/` itself.
   - `rate_limits` table: `(client_ip, bucket)` primary key + `count`, same
     10-minute-bucket/5-per-window policy as `api/shared/rateLimit.ts`, just
     against SQLite instead of a Table Storage `RateLimits` table.
+  - `run_tokens` / `run_token_rate_limits` tables — **added 2026-09-09**, SQLite
+    equivalents of the `RunTokens`/`RunTokenRateLimits` Table Storage tables
+    described in "Table Storage schema" above (see "Run token verification" in
+    `docs/game-design.md`). `server/runTokens.ts` sweeps expired rows on each
+    issue rather than a scheduled job — no background task runner exists in
+    this project, and issuance happens often enough (once per run) to keep the
+    table bounded without one.
 - **Server**: a single Node process (`server/index.ts`, plain `node:http` —
   no Express or other HTTP framework dependency, since the route surface is
   two JSON endpoints plus static files) serves the Vite production build

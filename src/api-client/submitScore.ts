@@ -15,6 +15,11 @@ export interface ScoreSubmission {
   score: number
   elapsedSec: number
   submissionGuid: string
+  // Run-token verification (docs/game-design.md "Run token verification"):
+  // required server-side. Null only in the rare case PlayScene's token fetch
+  // never resolved — such a submission gets rejected by the server (422)
+  // rather than silently skipping verification for it.
+  runToken: string | null
 }
 
 export async function submitScore(submission: ScoreSubmission): Promise<void> {

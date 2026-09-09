@@ -33,6 +33,12 @@ export function PostGame({ run, onSubmitted }: PostGameProps) {
       score: run.score,
       elapsedSec: run.elapsedSec,
       submissionGuid: crypto.randomUUID(),
+      // Fixed at the moment of this run (docs/game-design.md "Run token
+      // verification") — persisted as-is into the retry queue below on
+      // failure, so a later retry keeps checking the claimed elapsedSec
+      // against the *original* run's start time, not a freshly-issued one
+      // (which would always be too new to satisfy the check).
+      runToken: run.runToken,
     }
     void submitScore(submission).catch((err) => {
       console.error('submitScore failed', err)

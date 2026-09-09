@@ -16,6 +16,12 @@ import Phaser from 'phaser'
 export interface GameOverPayload {
   score: number
   elapsedSec: number
+  // Run-token verification (docs/game-design.md "Run token verification"):
+  // fetched at PlayScene start, carried through GameOver to submitScore. Null
+  // when the fetch hasn't resolved (an extremely rare timing edge case — see
+  // src/api-client/startRun.ts) — submitScore will reject a submission with
+  // no token rather than silently skip verification for it.
+  runToken: string | null
 }
 
 export const GAME_OVER_EVENT = 'gameOver'

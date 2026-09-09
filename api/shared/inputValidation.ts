@@ -28,6 +28,7 @@ export interface SubmissionInput {
   score: number
   elapsedSec: number
   submissionGuid: string
+  runToken: string
 }
 
 export type ValidationResult =
@@ -103,6 +104,16 @@ export function validateSubmission(body: unknown): ValidationResult {
     return { ok: false, error: 'submissionGuid must be a valid GUID.' }
   }
 
+  // Run-token verification (docs/game-design.md "Run token verification"):
+  // issued by /api/startRun at actual run start, required here so the claimed
+  // elapsedSec can be checked against real server-observed time, not just
+  // trusted as self-reported input. Same GUID shape as submissionGuid since
+  // both are generated with randomUUID() server-side.
+  const { runToken } = body
+  if (typeof runToken !== 'string' || !GUID_PATTERN.test(runToken)) {
+    return { ok: false, error: 'runToken must be a valid token.' }
+  }
+
   return {
     ok: true,
     value: {
@@ -110,6 +121,7 @@ export function validateSubmission(body: unknown): ValidationResult {
       score,
       elapsedSec,
       submissionGuid,
+      runToken,
     },
   }
 }

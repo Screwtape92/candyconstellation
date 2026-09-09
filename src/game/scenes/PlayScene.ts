@@ -6,6 +6,7 @@ import { Obstacle } from '../entities/Obstacle'
 import { Player } from '../entities/Player'
 import { PowerUp } from '../entities/PowerUp'
 import type { Projectile } from '../entities/Projectile'
+import { startRun } from '../../api-client/startRun'
 import { eventBus, HUD_UPDATE_EVENT } from '../eventBus'
 import { AudioSystem } from '../systems/AudioSystem'
 import { BlasterSystem, PROJECTILE_DAMAGE } from '../systems/BlasterSystem'
@@ -34,12 +35,24 @@ export class PlayScene extends Phaser.Scene {
   private scoreSystem!: ScoreSystem
   private healthText!: Phaser.GameObjects.Text
   private scoreText!: Phaser.GameObjects.Text
+  // Run-token verification (docs/game-design.md "Run token verification"):
+  // requested the moment the run actually starts, below, so submitScore can
+  // later check the claimed elapsedSec against real server-observed time.
+  private runToken: string | null = null
 
   constructor() {
     super('PlayScene')
   }
 
   create() {
+    // Fire-and-forget, same as submitScore's own resilience principle
+    // (docs/architecture.md "Score-submission resilience") — a run must never
+    // wait on this to start. Issued as early as possible in create() so its
+    // timestamp reflects the actual start of play, not some later point.
+    void startRun().then((token) => {
+      this.runToken = token
+    })
+
     // First, so the starfield sits behind everything added after it (its own
     // depth keeps it there regardless, but creation order matches intent).
     this.background = new ParallaxBackground(this)
@@ -223,6 +236,7 @@ export class PlayScene extends Phaser.Scene {
       this.scene.launch('GameOverScene', {
         score: this.scoreSystem.current,
         elapsedSec: this.scoreSystem.elapsedSec,
+        runToken: this.runToken,
       })
     })
   }

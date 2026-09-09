@@ -471,6 +471,74 @@ highest-value obstacle (`jawbreaker`). This also safely covers the Sugar
 Shield kill path: ramming obstacles can't destroy them faster than the
 blaster's fire-rate-bounded ceiling already assumes.
 
+## Run token verification
+
+**Added 2026-09-09, live at the beerfest event**, closing a gap the checks
+above can't: the plausibility formula only judges whether `score` is
+realistic *for the claimed* `elapsedSec` — it has no way to tell whether
+`elapsedSec` itself is real, since it was otherwise pure client-reported
+input. A fabricated-but-realistic pair (chosen well inside the formula's
+generous ceiling, with a normal-looking fractional value) is completely
+indistinguishable from a genuine great run. This was exploited live: an
+entry named "Marco Hacked Again" reached #1 with a plausible-looking
+430-second/14850-point submission, then a second one hit 267,300 points
+before this fix shipped — both would have sailed past every check in the
+"Anti-cheat plausibility formula" section above unnoticed if the name hadn't
+announced it.
+
+The fix ties `elapsedSec` to real server-observed time instead of trusting
+it as self-reported:
+
+- `POST /api/startRun` issues a single-use, server-timestamped token the
+  moment a run actually begins (`PlayScene.create()`, fire-and-forget —
+  starting a run must never wait on this, same principle as
+  `docs/architecture.md` "Score-submission resilience"). The token rides
+  through `GameOverScene` → the `GAME_OVER_EVENT` payload → `PostGame` →
+  `submitScore`, unchanged, including through the offline retry queue if the
+  first submission attempt fails (important: a *later* retry must keep using
+  the *original* token, not a freshly-issued one — a fresh token's age would
+  always be too small to cover the claimed `elapsedSec`; the original token's
+  age only grows more permissive the longer a retry is delayed).
+- `submitScore` now requires this token, consumes it (single-use — replaying
+  one token for a second submission is rejected), and checks:
+  `claimedElapsedSec <= (now - tokenIssuedAtUtc) + clockSkewToleranceSec`.
+  A submission can never claim more play time than has actually elapsed,
+  wall-clock, since its run began.
+- `maxViableRunSec`-equivalent ceiling on token age (`RUN_TOKEN_MAX_AGE_SEC`,
+  placeholder **3600s / 1h**, generous — covers a player lingering on the
+  name-entry screen or a long offline retry wait) bounds both storage growth
+  and how long a token stays valid at all.
+- A submission with no token, an unknown token, an already-consumed token, or
+  a token whose age doesn't cover the claim is rejected with the same 422
+  message as the plausibility check ("Score is not plausible for the
+  reported run length.") — deliberately not distinguished from that check in
+  the response, so there's no benefit to an attacker in probing which
+  specific rule caught them.
+
+**What this doesn't close**: an attacker who actually *waits* the real
+wall-clock duration they intend to claim, then submits a plausible score for
+it, still isn't distinguishable from a genuine player — there's no
+server-authoritative simulation of the actual game, which would be a much
+larger undertaking than fits this project's scope. What this closes is the
+*instant* fabrication pattern actually observed (submit any score/duration
+pair in a fraction of a second via curl/devtools) by forcing a minimum real
+wait proportional to the claim. Verified 2026-09-09 against the self-hosted
+server: a token-less submission is rejected (400), a fresh token immediately
+used to claim a long run is rejected (422), a genuine short wait followed by
+a matching claim is accepted (201), replaying a consumed token is rejected
+(422), and an unknown/bogus token is rejected (422).
+
+Implemented on both backends — self-hosted (`server/runTokens.ts`, SQLite
+`run_tokens`/`run_token_rate_limits` tables, live-tested above) and Azure
+Functions (`api/startRun/`, `api/shared/runTokenStore.ts`, Table Storage
+`RunTokens`/`RunTokenRateLimits` tables) — for the same reason the rest of
+`api/shared/` is kept storage-agnostic and shared: `api/shared/runToken.ts`'s
+`isValidRunDuration` check is pure logic, storage-agnostic, imported directly
+by both. The Azure side type-checks and builds but — like the rest of that
+path — hasn't been live-tested against real Table Storage tonight (the
+subscription is still `Disabled`; see `docs/architecture.md` "Self-hosted
+deployment").
+
 ## Audio spec
 
 **Being built up incrementally from 2026-09-08**, one real user-supplied cue

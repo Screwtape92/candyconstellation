@@ -22,6 +22,7 @@ const SHAKE_INTENSITY = 0.01
 interface GameOverData {
   score?: number
   elapsedSec?: number
+  runToken?: string | null
 }
 
 // Launched (not started) on top of PlayScene, which is paused rather than
@@ -72,6 +73,7 @@ export class GameOverScene extends Phaser.Scene {
       eventBus.emit(GAME_OVER_EVENT, {
         score: data.score ?? 0,
         elapsedSec: data.elapsedSec ?? 0,
+        runToken: data.runToken ?? null,
       })
     })
   }

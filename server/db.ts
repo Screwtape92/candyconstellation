@@ -40,4 +40,25 @@ db.exec(`
     count INTEGER NOT NULL,
     PRIMARY KEY (client_ip, bucket)
   );
+
+  -- Run-token verification (docs/game-design.md "Run token verification",
+  -- added 2026-09-09): issued at real run start, consumed (single-use) at
+  -- submission, so submitScore can check the claimed elapsedSec against real
+  -- server-observed elapsed time instead of trusting it as pure client input.
+  CREATE TABLE IF NOT EXISTS run_tokens (
+    token TEXT PRIMARY KEY,
+    issued_at_utc TEXT NOT NULL,
+    consumed INTEGER NOT NULL DEFAULT 0
+  );
+
+  -- Separate, more generous bucket from rate_limits above (which throttles
+  -- submitScore) — a real player restarting several times in a row
+  -- ("instant restart", docs/game-design.md "Feel & experience") needs a
+  -- fresh token per attempt, well before any of those runs reach submission.
+  CREATE TABLE IF NOT EXISTS run_token_rate_limits (
+    client_ip TEXT NOT NULL,
+    bucket TEXT NOT NULL,
+    count INTEGER NOT NULL,
+    PRIMARY KEY (client_ip, bucket)
+  );
 `)

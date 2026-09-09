@@ -11,8 +11,11 @@ import {
 } from '../shared/tableStorageClient'
 import { validateSubmission } from '../shared/inputValidation'
 import { isPlausibleScore } from '../shared/antiCheat'
+import { isValidRunDuration } from '../shared/runToken'
 import { buildRowKey } from '../shared/scoreKey'
 import { incrementAndCheckRateLimit } from '../shared/rateLimit'
+import { consumeRunToken } from '../shared/runTokenStore'
+import { getRunTokensTableClient } from '../shared/tableStorageClient'
 
 const SCORES_PARTITION_KEY = 'score'
 
@@ -34,7 +37,8 @@ export async function submitScore(
   if (!validation.ok) {
     return { status: 400, jsonBody: { error: validation.error } }
   }
-  const { name, score, elapsedSec, submissionGuid } = validation.value
+  const { name, score, elapsedSec, submissionGuid, runToken } =
+    validation.value
 
   // Per-IP rate limit (docs/architecture.md "Rate-limiting"): increment the
   // caller's bucket and reject before the anti-cheat check or the Scores write.
@@ -52,6 +56,31 @@ export async function submitScore(
     }
   } catch (err) {
     context.error('submitScore rate-limit check failed', err)
+    return {
+      status: 500,
+      jsonBody: { error: 'Failed to record score. Please retry.' },
+    }
+  }
+
+  // Run-token verification (docs/game-design.md "Run token verification"):
+  // consumeRunToken is single-use, so a missing/unknown/already-used token is
+  // rejected here before isValidRunDuration even runs. Same rejection message
+  // as the plausibility check below — both boil down to "this claimed run
+  // isn't credible" and there's no benefit to an attacker in distinguishing
+  // which specific check caught it.
+  try {
+    await ensureTablesReady()
+    const consumed = await consumeRunToken(getRunTokensTableClient(), runToken)
+    if (!consumed || !isValidRunDuration(elapsedSec, consumed.issuedAtUtc)) {
+      return {
+        status: 422,
+        jsonBody: {
+          error: 'Score is not plausible for the reported run length.',
+        },
+      }
+    }
+  } catch (err) {
+    context.error('submitScore run-token check failed', err)
     return {
       status: 500,
       jsonBody: { error: 'Failed to record score. Please retry.' },

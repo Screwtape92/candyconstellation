@@ -1,7 +1,7 @@
 import { createServer } from 'node:http'
 import path from 'node:path'
 import './db.js'
-import { handleSubmitScore, handleGetLeaderboard } from './api.js'
+import { handleSubmitScore, handleGetLeaderboard, handleStartRun } from './api.js'
 import { serveStatic } from './staticFiles.js'
 
 // Self-hosted entry point for the home-box + ngrok deployment path (see
@@ -20,6 +20,10 @@ const server = createServer((req, res) => {
 
   if (req.method === 'POST' && url.pathname === '/api/submitScore') {
     void handleSubmitScore(req, res)
+    return
+  }
+  if (req.method === 'POST' && url.pathname === '/api/startRun') {
+    handleStartRun(req, res)
     return
   }
   if (req.method === 'GET' && url.pathname === '/api/getLeaderboard') {

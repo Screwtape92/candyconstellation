@@ -17,6 +17,7 @@
   "include": [
     "submitScore/**/*.ts",
     "getLeaderboard/**/*.ts",
+    "startRun/**/*.ts",
     "shared/**/*.ts"
   ],
   "exclude": ["dist", "node_modules"]
