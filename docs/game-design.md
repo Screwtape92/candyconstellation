@@ -672,6 +672,43 @@ the token the same way; and a genuine run reporting real, paced progress
 throughout is accepted (201) with the exact same total a hand-fabricated
 submission would have needed to reverse-engineer.
 
+**Beaten within hours by "Hugo".** `MAX_REPORT_GAP_SEC` (12s) combined with
+`DELTA_TOLERANCE_MULTIPLIER` (3x) meant a report every ~11s could each claim
+up to ~14,400 kill points (`maxKillRatePerSec()` 400/sec × 12s gap × 3) —
+"sustained" ended up meaning "keep a background script alive," not "look
+like real incremental play," since each individual jump could be far larger
+than anything real play produces. Score/elapsedSec matched the earlier
+"BetterThanHacker" fake almost exactly (38848 / ~1499.26s vs.
+38848 / ~1499.2553s), confirming the same script, now just modified to keep
+posting during the wait rather than skipping straight to one final report.
+Compounded by this repo being public — the exact thresholds were sitting in
+plain English in commit messages and this doc, in real time, during the
+event, so nothing needed reverse-engineering.
+
+**Tightened same day**: `MAX_REPORT_GAP_SEC` 12s → 8s, `DELTA_TOLERANCE_MULTIPLIER`
+3x → 1.5x (matching antiCheat.ts's own whole-run `TOLERANCE_MULTIPLIER` of
+1.15 more closely, rather than tripling it). Cuts the maximum single-report
+jump roughly 5x (~14,400 → ~4,800 for kills) and requires meaningfully more
+frequent reports. Re-verified: a report paced at the old 12s/near-ceiling
+pattern is now rejected; a report claiming the old ~14,000-point jump within
+the new 8s window is also rejected; a genuine run reporting at the real
+client cadence (3s) is still accepted cleanly.
+
+**This still doesn't fully close it** — a script willing to report even
+more frequently, each time within the new (still nonzero) ceiling, is still
+just a rate bound, not a check against what could actually have spawned.
+Investigated whether historical entries could be retroactively re-audited
+against a tightened *whole-run* ceiling instead (antiCheat.ts's
+`TOLERANCE_MULTIPLIER`, computable from just `score`/`elapsedSec`, unlike the
+live-progress check above which needs report-timing data nothing retains):
+at tolerance all the way down to 0.5 (half today's already-generous value),
+zero of 110 entries would fail — every score sits at 5-9% of the
+theoretical ceiling, including genuine ones like Kian's. Confirms the
+whole-run ratio was never the actual discriminator (a deliberate fake is
+calibrated to clear whatever ceiling exists); the live-progress *pacing*
+check is where the real signal lives, and that's exactly the one that can't
+be retroactively reconstructed for anything already accepted.
+
 Implemented on both backends, same pattern as run-token verification and
 score decomposition: `api/shared/liveProgress.ts` holds the storage-agnostic
 validation logic, `server/runTokens.ts` (SQLite) and
