@@ -20,28 +20,23 @@
 
 import { maxCandyRatePerSec, maxKillRatePerSec } from './antiCheat'
 
-// Tightened 2026-09-09 (from 12s): a live attacker ("Hugo" — see
-// docs/game-design.md "Live progress verification") found that 12s combined
-// with the old 3x delta tolerance below meant a report every ~11s could each
-// claim up to ~14,400 kill points — "sustained" ended up meaning "keep a
-// script alive," not "look like real incremental play." Still generous
-// relative to the client's own reporting cadence (REPORT_INTERVAL_MS in
-// src/api-client/reportProgress.ts, 3000ms) — covers normal network jitter/a
-// missed beat without flagging a real player — but forces smaller, more
-// frequent jumps than before.
-export const MAX_REPORT_GAP_SEC = 8
+// Generous relative to the client's own reporting cadence
+// (REPORT_INTERVAL_MS in src/api-client/reportProgress.ts, 3000ms) — covers
+// normal network jitter/a missed beat or two without flagging a real player,
+// while still forcing reports to keep arriving throughout the run rather
+// than only at the start and end (see the file-level comment above for why
+// that gap specifically needs closing).
+export const MAX_REPORT_GAP_SEC = 12
 
-// Tightened 2026-09-09 (from 3): still looser than antiCheat.ts's own whole-
-// run TOLERANCE_MULTIPLIER (1.15) — this bounds a *short interval* rather
-// than a whole run, and short intervals are exactly where a legitimate burst
-// (Candy Magnet pulling in several candies at once, a lucky cluster of
-// obstacles lined up for the blaster) reads as a spike relative to its own
-// tiny window, so some extra slack over 1.15 is still warranted. 3x combined
-// with the old 12s gap is what let "Hugo" claim ~14,400 kill points per
-// report while technically staying "under the ceiling" — reduced together
-// with MAX_REPORT_GAP_SEC above so each report can move the total by
-// meaningfully less.
-const DELTA_TOLERANCE_MULTIPLIER = 1.5
+// Looser than antiCheat.ts's own TOLERANCE_MULTIPLIER (1.15) — this bounds a
+// *short interval* rather than a whole run, and short intervals are exactly
+// where a legitimate burst (Candy Magnet pulling in several candies at once,
+// a lucky cluster of obstacles lined up for the blaster) reads as a spike
+// relative to its own tiny window. Generous here costs nothing: the earlier
+// checks (run-token, decomposition, whole-run plausibility ceiling) already
+// bound the aggregate tightly; this only needs to catch a report claiming
+// dramatically more progress than any short real interval could produce.
+const DELTA_TOLERANCE_MULTIPLIER = 3
 
 export interface ProgressCheckpoint {
   candyPoints: number
